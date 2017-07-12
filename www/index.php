@@ -20,8 +20,6 @@ if(file_exists($f3->get("DB_NAME")))  {
     (new \Controller\Base)->install($f3);
 }
 
-//new \DB\SQL\Session($f3->get("DB"));
-
 // Error handling
 $f3->set('ONERROR',
     function($f3) {
@@ -61,7 +59,7 @@ $access->authorize(\Controller\Auth::role($f3));
 
 // Normal routes
 // - User management
-$f3->route('GET @user_list: /useres', '\Controller\User->getList');
+$f3->route('GET @user_list: /users', '\Controller\User->getList');
 $f3->route('GET @user_view: /user/@id/view', '\Controller\User->getOne');
 $f3->route('GET @user_new: /user/new', '\Controller\User->edit');
 $f3->route('GET @user_edit: /user/@id/edit', '\Controller\User->edit');
@@ -75,7 +73,15 @@ $f3->route('GET @user_profile_edit: /user/profile/edit', '\Controller\User->prof
 //$f3->route('GET @install: /install', '\Controller\Base->install');
 $f3->route('POST /postinstall', '\Controller\Base->post_install');
 
+//Config
+$f3->route('GET @config: /config', '\Controller\Config->create');
+$f3->route('POST @config: /config', '\Controller\Config->save');
+
 // - Page navigation and stuff
+$f3->route('GET @page_new: /config/page/new', '\Controller\Page->edit');
+$f3->route('GET @page_edit: /config/page/@id/edit', '\Controller\Page->edit');
+$f3->route('POST @page_update: /config/page/@id/update', '\Controller\Page->update');
+$f3->route('POST @page_create: /config/page/create', '\Controller\Page->update');
 $f3->route('GET @page_view: /@slug', '\Controller\Page->getOne');
 
 $f3->run();
