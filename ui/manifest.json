@@ -1,0 +1,26 @@
+{
+    "name": "{{ @cfg.title }}",
+    "short_name": "{{ @cfg.title }}",
+    "theme_color": "rgb(85,26,139)",
+    "background_color": "#ffffff",
+    "display": "standalone",
+    "orientation": "portrait",
+    "start_url": "/",
+    "icons": [
+    {
+        "src": "webapp-icon.png",
+        "sizes": "144x144",
+        "type": "image/png"
+    },
+    {
+        "src": "tile.png",
+        "sizes": "558x558",
+        "type": "image/png"
+    },
+    {
+        "src": "tile-wide.png",
+        "sizes": "558x237",
+        "type": "image/png"
+    }
+     ]
+}
