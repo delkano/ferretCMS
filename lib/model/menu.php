@@ -8,13 +8,20 @@ class Menu extends \DB\Cortex {
                 'type' => 'VARCHAR256',
                 'nullable' => false
             ),
-            'page' => array(
+            'parent' => array(
                 'belongs-to-one' => '\Model\Menu',
+                'nullable' => true
+            ),
+            'children' => array(
+                'has-many' => array('\Model\Menu', 'parent')
+            ),
+            'page' => array(
+                'belongs-to-one' => '\Model\Page',
                 'nullable' => true
             ),
             'url' => array(
                 'type' => 'TEXT',
-                'nullable' => false
+                'nullable' => true
             )
         ),
         $db = 'DB',

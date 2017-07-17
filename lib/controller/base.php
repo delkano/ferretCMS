@@ -22,7 +22,7 @@ class Base {
         $f3->set("SESSION.INSTALLING", true);
 
         $f3->route('POST @user_create: /postinstall', '\Controller\Base->post_install');
-        echo \Template::instance()->render('templates/userEdit.html');
+        echo \Preview::instance()->render('templates/userEdit.html');
         exit;
     }
 

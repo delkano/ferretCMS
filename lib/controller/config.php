@@ -12,7 +12,7 @@ class Config {
         $f3->set("site.title", "Site Configuration");
         $f3->set('site.template', "configEdit");
 
-        echo \Template::instance()->render("layout.html");
+        echo \Preview::instance()->render("layout.html");
     }
 
     public function save($f3) {

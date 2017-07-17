@@ -23,7 +23,7 @@ class User {
                 if($id == $me->get("id")) 
                     $f3->set("myprofile", true);
             }
-            echo \Template::instance()->render('layout.html');
+            echo \Preview::instance()->render('layout.html');
         }
     }
     public function getList($f3) {
@@ -34,7 +34,7 @@ class User {
         $f3->set("site.title", "User List");
         $f3->set("site.template", "userList");
 
-        echo \Template::instance()->render('layout.html');
+        echo \Preview::instance()->render('layout.html');
     }
     public function profile($f3){
         if(!empty($f3->get("SESSION")) && !empty($f3->get("SESSION.user"))) {
@@ -44,7 +44,7 @@ class User {
             $f3->set('site.template', "userView");
             $f3->set("myprofile", true);
 
-            echo \Template::instance()->render('layout.html');
+            echo \Preview::instance()->render('layout.html');
         }
     }
 
@@ -56,7 +56,7 @@ class User {
             $f3->set('site.template', "userEdit");
             $f3->set("myprofile", true);
 
-            echo \Template::instance()->render('layout.html');
+            echo \Preview::instance()->render('layout.html');
         }
     }
 
@@ -78,7 +78,7 @@ class User {
                 $f3->set('site.title', $user->name." - Edit");
             $f3->set('site.template', "userEdit");
 
-            echo \Template::instance()->render('layout.html');
+            echo \Preview::instance()->render('layout.html');
         } else {
             $f3->error(404);
         }

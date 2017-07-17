@@ -18,7 +18,7 @@ class Page {
         $f3->set("page", $page);
 
         $f3->set('site.template', "pageView");
-        echo \Template::instance()->render("layout.html");
+        echo \Preview::instance()->render("layout.html");
     }
     
     public function create($f3) {
@@ -28,7 +28,7 @@ class Page {
         $page = new \Model\Page();
         $f3->set("page", $page);
 
-        echo \Template::instance()->render("layout.html");
+        echo \Preview::instance()->render("layout.html");
     }
 
     public function edit($f3, $params) {
@@ -43,7 +43,7 @@ class Page {
 
         $f3->set("page", $page);
 
-        echo \Template::instance()->render("layout.html");
+        echo \Preview::instance()->render("layout.html");
     }
 
     public function update($f3, $params) {

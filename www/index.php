@@ -35,6 +35,9 @@ $f3->set('ONERROR',
 $f3->set("LOGGEDIN", (\Controller\Auth::role($f3) != 'guest'));
 $f3->set("ADMIN", (\Controller\Auth::role($f3) == 'admin'));
 
+// Special filters
+\Preview::instance()->filter('menu', '\Controller\Menu->getOne');
+
 // Home
 $f3->route("GET @home: /", function($f3) {
     if(!empty($f3->get("cfg.home"))) {
