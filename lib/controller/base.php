@@ -43,6 +43,14 @@ class Base {
         $user->role = 'admin';
         $user->save();
 
+        // Let's create an empty home page and set it up as home
+        $page = new \Model\Page();
+        $page->title = "Home";
+        $page->content = "New page...";
+        $page->slug = \Web::instance()->slug($page->title);
+        $page->save();
+        \Model\Config::store("home", $page->slug);
+
         $f3->set("user", $user);
         $f3->set("SESSION.user", $user->username);
 
@@ -55,6 +63,7 @@ class Base {
         if($args['type'] == 'less') {
             $parser = new \Less_Parser(array('compress'=>true));
             $files = $_GET['files'];
+            if(empty($files)) $files = $_GET['?files']; // Lighttpd fix
 
             foreach(explode(",", $files) as $file) 
                 $parser->parseFile($path.$file);

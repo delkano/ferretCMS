@@ -15,8 +15,8 @@ class User {
             $f3->error(404);
         } else {
             $f3->set('user', $user);
-            $f3->set('page.title', $user->name);
-            $f3->set('page.template', "userView");
+            $f3->set('site.title', $user->name);
+            $f3->set('site.template', "userView");
 
             if(!empty($f3->get("SESSION")) && !empty($f3->get("SESSION.user"))) {
                 $me = \Controller\User::get($f3, $f3->get("SESSION.user"));
@@ -31,8 +31,8 @@ class User {
         $useres = $useres->find();
 
         $f3->set('useres', $useres);
-        $f3->set("page.title", "User List");
-        $f3->set("page.template", "userList");
+        $f3->set("site.title", "User List");
+        $f3->set("site.template", "userList");
 
         echo \Template::instance()->render('layout.html');
     }
@@ -40,8 +40,8 @@ class User {
         if(!empty($f3->get("SESSION")) && !empty($f3->get("SESSION.user"))) {
             $user = \Controller\User::get($f3, $f3->get("SESSION.user"));
             $f3->set('user', $user);
-            $f3->set('page.title', $user->name." - Edit");
-            $f3->set('page.template', "userView");
+            $f3->set('site.title', $user->name." - Edit");
+            $f3->set('site.template', "userView");
             $f3->set("myprofile", true);
 
             echo \Template::instance()->render('layout.html');
@@ -52,8 +52,8 @@ class User {
         if(!empty($f3->get("SESSION")) && !empty($f3->get("SESSION.user"))) {
             $user = \Controller\User::get($f3, $f3->get("SESSION.user"));
             $f3->set('user', $user);
-            $f3->set('page.title', $user->name." - Edit");
-            $f3->set('page.template', "userEdit");
+            $f3->set('site.title', $user->name." - Edit");
+            $f3->set('site.template', "userEdit");
             $f3->set("myprofile", true);
 
             echo \Template::instance()->render('layout.html');
@@ -73,10 +73,10 @@ class User {
         if($new || !$user->dry()) {
             $f3->set('user', $user);
             if($new)
-                $f3->set('page.title', "New user");
+                $f3->set('site.title', "New user");
             else
-                $f3->set('page.title', $user->name." - Edit");
-            $f3->set('page.template', "userEdit");
+                $f3->set('site.title', $user->name." - Edit");
+            $f3->set('site.template', "userEdit");
 
             echo \Template::instance()->render('layout.html');
         } else {

@@ -36,7 +36,14 @@ $f3->set("LOGGEDIN", (\Controller\Auth::role($f3) != 'guest'));
 $f3->set("ADMIN", (\Controller\Auth::role($f3) == 'admin'));
 
 // Home
-$f3->route("GET @home: /", '\Controller\Base->home');
+$f3->route("GET @home: /", function($f3) {
+    if(!empty($f3->get("cfg.home"))) {
+        $f3->reroute("@page_view(@slug=".$f3->get("cfg.home").")");
+    } else {
+        $f3->error(404);
+        exit;
+    }
+});
 $f3->route("GET @manifest: /manifest.json", function($f3) {
     echo \Template::instance()->render('manifest.json');
 });
@@ -74,11 +81,11 @@ $f3->route('GET @user_profile_edit: /user/profile/edit', '\Controller\User->prof
 $f3->route('POST /postinstall', '\Controller\Base->post_install');
 
 //Config
-$f3->route('GET @config: /config', '\Controller\Config->create');
-$f3->route('POST @config: /config', '\Controller\Config->save');
+$f3->route('GET @config: /config/general', '\Controller\Config->create');
+$f3->route('POST @config: /config/general', '\Controller\Config->save');
 
 // - Page navigation and stuff
-$f3->route('GET @page_new: /config/page/new', '\Controller\Page->edit');
+$f3->route('GET @page_new: /config/page/new', '\Controller\Page->create');
 $f3->route('GET @page_edit: /config/page/@id/edit', '\Controller\Page->edit');
 $f3->route('POST @page_update: /config/page/@id/update', '\Controller\Page->update');
 $f3->route('POST @page_create: /config/page/create', '\Controller\Page->update');

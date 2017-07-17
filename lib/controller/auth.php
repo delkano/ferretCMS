@@ -8,8 +8,8 @@ class Auth {
      ***/
 
     public function login($f3) {
-        $f3->set('page.title', 'login');
-        $f3->set("page.template", "login");
+        $f3->set('site.title', 'login');
+        $f3->set("site.template", "login");
         echo \Template::instance()->render('layout.html');
     }
 

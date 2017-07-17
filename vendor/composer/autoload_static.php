@@ -10,6 +10,16 @@ class ComposerStaticInit760412dbff8c156999b0647f64630706
         '45e8c92354af155465588409ef796dbc' => __DIR__ . '/..' . '/bcosca/fatfree/lib/base.php',
     );
 
+    public static $prefixesPsr0 = array (
+        'L' => 
+        array (
+            'Less' => 
+            array (
+                0 => __DIR__ . '/..' . '/oyejorge/less.php/lib',
+            ),
+        ),
+    );
+
     public static $classMap = array (
         'Access' => __DIR__ . '/..' . '/xfra35/f3-access/lib/access.php',
         'Audit' => __DIR__ . '/..' . '/bcosca/fatfree-core/audit.php',
@@ -62,11 +72,13 @@ class ComposerStaticInit760412dbff8c156999b0647f64630706
         'Web\\OAuth2' => __DIR__ . '/..' . '/bcosca/fatfree-core/web/oauth2.php',
         'Web\\OpenID' => __DIR__ . '/..' . '/bcosca/fatfree-core/web/openid.php',
         'Web\\Pingback' => __DIR__ . '/..' . '/bcosca/fatfree-core/web/pingback.php',
+        'lessc' => __DIR__ . '/..' . '/oyejorge/less.php/lessc.inc.php',
     );
 
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
+            $loader->prefixesPsr0 = ComposerStaticInit760412dbff8c156999b0647f64630706::$prefixesPsr0;
             $loader->classMap = ComposerStaticInit760412dbff8c156999b0647f64630706::$classMap;
 
         }, null, ClassLoader::class);

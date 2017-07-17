@@ -9,8 +9,8 @@ class Config {
         $f3->set("cfg.description", \Model\Config::read("description"));
         $f3->set("cfg.home", \Model\Config::read("home"));
 
-        $f3->set("page.title", "Site Configuration");
-        $f3->set('page.template', "configEdit");
+        $f3->set("site.title", "Site Configuration");
+        $f3->set('site.template', "configEdit");
 
         echo \Template::instance()->render("layout.html");
     }
@@ -22,7 +22,8 @@ class Config {
 
         \Model\Config::store("title", $title);
         \Model\Config::store("description", $description);
-        \Model\Config::store("home", $home);
+        if(!empty($home))
+            \Model\Config::store("home", $home);
 
         if(!empty($f3->get("FILES.upload-logo.name"))) {
             $f3->set('UPLOADS', 'img/');
