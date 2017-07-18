@@ -52,8 +52,11 @@
         <script src="{{@BASE}}/js/vendor/trumbowyg.min.js"></script>
         <script src="{{@BASE}}/js/vendor/jquery.singleuploadimage.js"></script>
         <script src="{{@BASE}}/js/vendor/chosen.jquery.min.js"></script>
-        <script src="/assets/js?files=plugins.js"></script>
-        <script src="/assets/js?files=main.js"></script>
+        <script src="{{@BASE}}/assets/js?files=plugins.js"></script>
+        <script src="{{@BASE}}/assets/js?files=main.js"></script>
+        {~ foreach(@js_files?:[] as @file): ~}
+        <script src="{{@BASE}}/assets/js?files={{@file}}.js"></script>
+        {~ endforeach ~}
 
         <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
         <!--

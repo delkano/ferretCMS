@@ -36,7 +36,7 @@ $f3->set("LOGGEDIN", (\Controller\Auth::role($f3) != 'guest'));
 $f3->set("ADMIN", (\Controller\Auth::role($f3) == 'admin'));
 
 // Special filters
-\Preview::instance()->filter('menu', '\Controller\Menu->getOne');
+\Template::instance()->filter('menu', '\Controller\Menu::instance()->getOne');
 
 // Home
 $f3->route("GET @home: /", function($f3) {
@@ -87,8 +87,12 @@ $f3->route('POST /postinstall', '\Controller\Base->post_install');
 $f3->route('GET @config: /config/general', '\Controller\Config->create');
 $f3->route('POST @config: /config/general', '\Controller\Config->save');
 
+$f3->route('GET @menu_list: /config/menus', '\Controller\Menu->getList');
+$f3->route('POST @menu_update: /config/menus', '\Controller\Menu->update');
+
 // - Page navigation and stuff
 $f3->route('GET @page_new: /config/page/new', '\Controller\Page->create');
+$f3->route('GET @page_list: /config/pages', '\Controller\Page->getList');
 $f3->route('GET @page_edit: /config/page/@id/edit', '\Controller\Page->edit');
 $f3->route('POST @page_update: /config/page/@id/update', '\Controller\Page->update');
 $f3->route('POST @page_create: /config/page/create', '\Controller\Page->update');

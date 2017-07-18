@@ -2343,7 +2343,7 @@ class CortexQueryParser extends \Prefab {
 			function($match) use($db) {
 				if (!isset($match[2]))
 					return $match[1];
-				if (preg_match('/\b(AND|OR|IN|LIKE|NOT)\b/i',$match[2]))
+				if (preg_match('/\b(IS|NULL|AND|OR|IN|LIKE|NOT)\b/i',$match[2]))
 					return $match[2];
 				return $db->quotekey($match[2]);
 			}, $cond);

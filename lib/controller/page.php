@@ -18,22 +18,36 @@ class Page {
         $f3->set("page", $page);
 
         $f3->set('site.template', "pageView");
-        echo \Preview::instance()->render("layout.html");
+        echo \Template::instance()->render("layout.html");
+    }
+
+    public function getList($f3) {
+        $pages = new \Model\Page();
+        $pages = $pages->find();
+
+        $f3->set("pages", $pages);
+        $f3->set("site.title", $f3->get("L.page.list"));
+        $f3->set('site.subtemplate', "pageList");
+        $f3->set('site.template', "config");
+
+        echo \Template::instance()->render("layout.html");
     }
     
     public function create($f3) {
         $f3->set("site.title", $f3->get("L.page.creating"));
-        $f3->set('site.template', "pageEdit");
+        $f3->set('site.subtemplate', "pageEdit");
+        $f3->set('site.template', "config");
 
         $page = new \Model\Page();
         $f3->set("page", $page);
 
-        echo \Preview::instance()->render("layout.html");
+        echo \Template::instance()->render("layout.html");
     }
 
     public function edit($f3, $params) {
         $f3->set("site.title", $f3->get("L.page.updating"));
-        $f3->set('site.template', "pageEdit");
+        $f3->set('site.subtemplate', "pageEdit");
+        $f3->set('site.template', "config");
 
         $page = new \Model\Page();
         if(!empty($params['id'])) {
@@ -43,7 +57,7 @@ class Page {
 
         $f3->set("page", $page);
 
-        echo \Preview::instance()->render("layout.html");
+        echo \Template::instance()->render("layout.html");
     }
 
     public function update($f3, $params) {

@@ -22,7 +22,7 @@ class Base {
         $f3->set("SESSION.INSTALLING", true);
 
         $f3->route('POST @user_create: /postinstall', '\Controller\Base->post_install');
-        echo \Preview::instance()->render('templates/userEdit.html');
+        echo \Template::instance()->render('templates/userEdit.html');
         exit;
     }
 
@@ -72,8 +72,9 @@ class Base {
             echo $parser->getCss();
         } else {
             $files = preg_replace('/(\.+\/)/','',$_GET['files']); // close potential hacking attempts  
+            if(empty($files)) $files = $_GET['?files']; // Lighttpd fix
             
-            echo \Preview::instance()->resolve(\Web::instance()->minify($files, null, true, $path));
+            echo \Template::instance()->resolve(\Web::instance()->minify($files, null, true, $path));
         }
     }
 }

@@ -10,9 +10,10 @@ class Config {
         $f3->set("cfg.home", \Model\Config::read("home"));
 
         $f3->set("site.title", "Site Configuration");
-        $f3->set('site.template', "configEdit");
+        $f3->set('site.subtemplate', "configEdit");
+        $f3->set('site.template', "config");
 
-        echo \Preview::instance()->render("layout.html");
+        echo \Template::instance()->render("layout.html");
     }
 
     public function save($f3) {

@@ -10,7 +10,7 @@ class Auth {
     public function login($f3) {
         $f3->set('site.title', 'login');
         $f3->set("site.template", "login");
-        echo \Preview::instance()->render('layout.html');
+        echo \Template::instance()->render('layout.html');
     }
 
     public function check($f3) {

@@ -23,18 +23,19 @@ class User {
                 if($id == $me->get("id")) 
                     $f3->set("myprofile", true);
             }
-            echo \Preview::instance()->render('layout.html');
+            echo \Template::instance()->render('layout.html');
         }
     }
     public function getList($f3) {
-        $useres = new \Model\User();
-        $useres = $useres->find();
+        $users = new \Model\User();
+        $users = $users->find();
 
-        $f3->set('useres', $useres);
+        $f3->set('users', $users);
         $f3->set("site.title", "User List");
-        $f3->set("site.template", "userList");
+        $f3->set('site.subtemplate', "userList");
+        $f3->set('site.template', "config");
 
-        echo \Preview::instance()->render('layout.html');
+        echo \Template::instance()->render('layout.html');
     }
     public function profile($f3){
         if(!empty($f3->get("SESSION")) && !empty($f3->get("SESSION.user"))) {
@@ -44,7 +45,7 @@ class User {
             $f3->set('site.template', "userView");
             $f3->set("myprofile", true);
 
-            echo \Preview::instance()->render('layout.html');
+            echo \Template::instance()->render('layout.html');
         }
     }
 
@@ -53,10 +54,11 @@ class User {
             $user = \Controller\User::get($f3, $f3->get("SESSION.user"));
             $f3->set('user', $user);
             $f3->set('site.title', $user->name." - Edit");
-            $f3->set('site.template', "userEdit");
+            $f3->set('site.subtemplate', "userEdit");
+            $f3->set('site.template', "config");
             $f3->set("myprofile", true);
 
-            echo \Preview::instance()->render('layout.html');
+            echo \Template::instance()->render('layout.html');
         }
     }
 
@@ -76,9 +78,10 @@ class User {
                 $f3->set('site.title', "New user");
             else
                 $f3->set('site.title', $user->name." - Edit");
-            $f3->set('site.template', "userEdit");
+            $f3->set('site.subtemplate', "userEdit");
+            $f3->set('site.template', "config");
 
-            echo \Preview::instance()->render('layout.html');
+            echo \Template::instance()->render('layout.html');
         } else {
             $f3->error(404);
         }
