@@ -21,16 +21,29 @@ class Page {
         echo \Template::instance()->render("layout.html");
     }
 
-    public function getList($f3) {
+    public function editList($f3, $params) {
+        $this->getList($f3, $params);
+        $f3->set('site.subtemplate', "pageList");
+        $f3->set('site.template', "config");
+        echo \Template::instance()->render("layout.html");
+    }
+    public function viewList($f3, $params) {
+        $this->getList($f3, $params);
+        $f3->set('site.template', "categoryView");
+        echo \Template::instance()->render("layout.html");
+    }
+    public function getList($f3, $params) {
         $pages = new \Model\Page();
-        $pages = $pages->find();
+
+        if(!empty($params["cat"])) {
+            $pages = $pages->find(array("categories LIKE ?", "%\"$params[cat]\"%"));
+        } else {
+            $pages = $pages->find();
+        }
 
         $f3->set("pages", $pages);
         $f3->set("site.title", $f3->get("L.page.list"));
-        $f3->set('site.subtemplate', "pageList");
-        $f3->set('site.template', "config");
 
-        echo \Template::instance()->render("layout.html");
     }
     
     public function create($f3) {
@@ -66,6 +79,7 @@ class Page {
         if(empty($f3->get("POST.slug"))) {
             $slug = \Web::instance()->slug($title);
         }
+        $cats = explode(",",$f3->get("POST.categories"));
 
         $page = new \Model\Page();
         if(!empty($params['id'])) {
@@ -76,10 +90,11 @@ class Page {
         $page->title = $title;
         $page->content = $content;
         $page->slug = $slug;
+        $page->categories = $cats;
 
         $page->save();
 
-        $f3->reroute("@page_view(@id=$page->id)");
+        $f3->reroute("@page_view(@slug=$page->slug)");
     }
 
     public function delete($f3, $params) {
@@ -91,7 +106,7 @@ class Page {
             $f3->error(404);
         } else {
             $page->erase();
-            $f3->reroute("@pages_list");
+            $f3->reroute("@page_list");
         }
     }
 }

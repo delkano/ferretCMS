@@ -1,16 +1,18 @@
 {~ if(@page.id): ~}
 <h2>{{@L.page.editing,@page.name|format}}</h2>
 
-<form method="POST" action="{{@BASE}}{{'page_update','id='.@page.id | alias}}"  enctype="multipart/form-data">
+<form method="POST" action="{{@BASE}}{{'page_update','id='.@page.id | alias}}"  enctype="multipart/form-data" class="wide">
 {~ else: ~}
 <h2>{{@L.page.creating}}</h2>
 
-<form method="POST" action="{{@BASE}}{{'page_create' | alias}}"  enctype="multipart/form-data">
+<form method="POST" action="{{@BASE}}{{'page_create' | alias}}"  enctype="multipart/form-data" class="wide">
 {~ endif ~}
 
     <label for="title">{{@L.page.title}}</label>
     <input type="text" name="title" value="{{@page.title}}" id="title">
     
-    <label for="content">{{@L.page.content}}</label>
-    <textarea name="content" rows="8" cols="40">{{@page.content}}</textarea>
+    <textarea class="beautiful" name="content" rows="8" cols="40">{{@page.content}}</textarea>
+    <input type="text" name="categories" value="{{implode(@page.categories?:[], ',')}}" id="categories">
+
+    <button type="submit">{{@L.basic.save}}</button>
 </form>

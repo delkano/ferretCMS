@@ -60,12 +60,12 @@ $f3->route('POST @login_check: /login_check', '\Controller\Auth->check');
 $f3->route('GET @logout: /logout', '\Controller\Auth->logout');
 
 // Route access
-$access = Access::instance();
+$access = \Access::instance();
 $access->policy('allow');
-$access->deny('/config');
-$access->allow('/config', 'admin');
+$access->deny('/config*');
+$access->allow('/config*', 'admin');
 
-$access->authorize(\Controller\Auth::role($f3));
+$access->authorize(\Controller\Auth::role($f3), function() { \Base::instance()->reroute("@login"); });
 
 // Normal routes
 // - User management
@@ -86,16 +86,20 @@ $f3->route('POST /postinstall', '\Controller\Base->post_install');
 //Config
 $f3->route('GET @config: /config/general', '\Controller\Config->create');
 $f3->route('POST @config: /config/general', '\Controller\Config->save');
+$f3->redirect('GET /config', '@config');
 
 $f3->route('GET @menu_list: /config/menus', '\Controller\Menu->getList');
 $f3->route('POST @menu_update: /config/menus', '\Controller\Menu->update');
 
 // - Page navigation and stuff
 $f3->route('GET @page_new: /config/page/new', '\Controller\Page->create');
-$f3->route('GET @page_list: /config/pages', '\Controller\Page->getList');
+$f3->route('GET @page_list: /config/pages', '\Controller\Page->editList');
 $f3->route('GET @page_edit: /config/page/@id/edit', '\Controller\Page->edit');
 $f3->route('POST @page_update: /config/page/@id/update', '\Controller\Page->update');
 $f3->route('POST @page_create: /config/page/create', '\Controller\Page->update');
+$f3->route('GET @page_delete: /config/page/@id/delete', '\Controller\Page->delete');
+$f3->route('GET @category_view: /category/@cat', '\Controller\Page->viewList');
+$f3->route('GET @category_edit: /config/category/@cat', '\Controller\Page->editList');
 $f3->route('GET @page_view: /@slug', '\Controller\Page->getOne');
 
 $f3->run();

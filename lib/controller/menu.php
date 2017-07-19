@@ -16,7 +16,7 @@ class Menu extends \Prefab {
 
     public function getList($f3) {
         $menus = new \Model\Menu();
-        $menus = $menus->find( "`parent` IS NULL");
+        $menus = $menus->find(array("parent=?", null));
 
         $pages = (new \Model\Page())->find();
 
@@ -34,12 +34,12 @@ class Menu extends \Prefab {
     }
 
     public function update($f3) {
-        foreach($f3['POST']['delete'] as $id) {
+        foreach($f3['POST']['delete']?:[] as $id) {
             $menu = new \Model\Menu();
             $menu->load(array("id=?", $id));
             $menu->erase();
         }
-        foreach($f3['POST']['menu'] as $line) {
+        foreach($f3['POST']['menu']?:[] as $line) {
             $menu = new \Model\Menu();
             if(isset($line['id'])) {
                 $menu->load(array('id=?',intval($line['id'])));
@@ -54,5 +54,6 @@ class Menu extends \Prefab {
 
             $menu->save();
         }
+        $f3->reroute("@menu_list");
     }
 }

@@ -5,6 +5,7 @@
         <tr>
             <th>{{@L.page.id}}</th>
             <th>{{@L.page.name}}</th>
+            <th>{{@L.page.categories}}</th>
             <th>{{@L.basic.actions}}</th>
         </tr>
     </thead>
@@ -13,7 +14,11 @@
         <tr>
             <td>{{@page.id}}</td>
             <td><a href="{{@BASE}}{{'page_edit', 'id='.@page.id| alias}}" title="{{@page.title}}">{{@page.title}}</a></td>
-            <td>edit - delete</td>
+            <td>{{ implode(',',@page.categories)}}</td>
+            <td>
+                <a href="{{@BASE}}{{'page_edit', 'id='.@page.id| alias}}" title="{{@page.title}}">edit</a>
+                - <a href="{{@BASE}}{{'page_delete', 'id='.@page.id| alias}}" title="{{@page.title}}">delete</a>
+            </td>
         </tr>
         {~ endforeach ~}
     </tbody>

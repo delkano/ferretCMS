@@ -1,6 +1,6 @@
 <ul>
     {~ foreach(@menu.children?:[] as @item): ~}
-    <li {{ strpos( @@URI, @item.slug ) !== false ? ' class="active"' : '' }}>
+    <li {{ strpos( @URI, @item.page.slug ) !== false ? ' class="active"' : '' }}>
         {~ if(@item.url): ~}
         <a href="{{@item.url}}" title="{{@item.name}}">{{@item.name}}</a>
         {~ elseif(@item.page): ~}
