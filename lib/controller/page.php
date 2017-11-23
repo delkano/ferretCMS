@@ -4,7 +4,6 @@ namespace Controller;
 
 class Page {
     public function getOne($f3, $params) {
-
         $page = new \Model\Page();
         if(!empty($params['id'])) {
             $id = intval($params['id']);

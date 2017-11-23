@@ -6,6 +6,9 @@ $f3 = \Base::instance();
 // F3 autoloader for application business code
 $f3->config('../config.ini');
 
+//if(!empty($f3["MULTILANG"]))
+    \Multilang::instance();
+
 if(file_exists($f3->get("DB_NAME")))  {
     $f3->set('DB', new \DB\SQL('sqlite:'.$f3->get('DB_NAME')));
 
@@ -41,7 +44,8 @@ $f3->set("ADMIN", (\Controller\Auth::role($f3) == 'admin'));
 // Home
 $f3->route("GET @home: /", function($f3) {
     if(!empty($f3->get("cfg.home"))) {
-        $f3->reroute("@page_view(@slug=".$f3->get("cfg.home").")");
+        //$f3->reroute("@page_view(@slug=".$f3->get("cfg.home").")");
+        (new \Controller\Page)->getOne($f3, array('slug' => $f3->get("cfg.home")));
     } else {
         $f3->error(404);
         exit;
@@ -62,7 +66,7 @@ $f3->route('GET @logout: /logout', '\Controller\Auth->logout');
 // Route access
 $access = \Access::instance();
 $access->policy('allow');
-$access->deny('/config*');
+//$access->deny('/config*');
 $access->allow('/config*', 'admin');
 
 $access->authorize(\Controller\Auth::role($f3), function() { \Base::instance()->reroute("@login"); });

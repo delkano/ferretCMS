@@ -56,6 +56,7 @@ class ComposerStaticInit760412dbff8c156999b0647f64630706
         'Magic' => __DIR__ . '/..' . '/bcosca/fatfree-core/magic.php',
         'Markdown' => __DIR__ . '/..' . '/bcosca/fatfree-core/markdown.php',
         'Matrix' => __DIR__ . '/..' . '/bcosca/fatfree-core/matrix.php',
+        'Multilang' => __DIR__ . '/..' . '/xfra35/f3-multilang/lib/multilang.php',
         'Prefab' => __DIR__ . '/..' . '/bcosca/fatfree-core/base.php',
         'Preview' => __DIR__ . '/..' . '/bcosca/fatfree-core/base.php',
         'Registry' => __DIR__ . '/..' . '/bcosca/fatfree-core/base.php',

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "35027322c7e30dcc9fec26bdf1e0013e",
+    "content-hash": "dee6f5a430f27684952fe7cae6a40074",
     "packages": [
         {
             "name": "bcosca/fatfree",
@@ -237,6 +237,43 @@
                 "permissions"
             ],
             "time": "2016-02-18T14:42:16+00:00"
+        },
+        {
+            "name": "xfra35/f3-multilang",
+            "version": "v1.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/xfra35/f3-multilang.git",
+                "reference": "9019a119385de053883d5e996eb9d044a28af74f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/xfra35/f3-multilang/zipball/9019a119385de053883d5e996eb9d044a28af74f",
+                "reference": "9019a119385de053883d5e996eb9d044a28af74f",
+                "shasum": ""
+            },
+            "require": {
+                "bcosca/fatfree-core": "3.*"
+            },
+            "type": "library",
+            "autoload": {
+                "classmap": [
+                    "lib/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-3.0"
+            ],
+            "description": "Route localization plugin for the PHP Fat-Free Framework",
+            "homepage": "https://github.com/xfra35/f3-multilang",
+            "keywords": [
+                "F3",
+                "fatfree",
+                "localization",
+                "multilingual"
+            ],
+            "time": "2016-04-18T09:25:51+00:00"
         }
     ],
     "packages-dev": [],

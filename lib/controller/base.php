@@ -54,6 +54,27 @@ class Base {
         $f3->set("user", $user);
         $f3->set("SESSION.user", $user->username);
 
+        // We should create here the whole admin menu
+        $menu = new \Model\Menu();
+        $menu->name = "Config Menu";
+        $menu->save();
+
+        $menuentry = new \Model\Menu();
+        $menuentry->parent = $menu;
+        $menuentry->name = "General";
+        $menuentry->url = $f3->BASE."/config/general";
+        $menuentry->save();
+        $menuentry = new \Model\Menu();
+        $menuentry->parent = $menu;
+        $menuentry->name = "Pages";
+        $menuentry->url = $f3->BASE."/config/pages";
+        $menuentry->save();
+        $menuentry = new \Model\Menu();
+        $menuentry->parent = $menu;
+        $menuentry->name = "Menus";
+        $menuentry->url = $f3->BASE."/config/menus";
+        $menuentry->save();
+
         $f3->reroute("config");
     }
 
