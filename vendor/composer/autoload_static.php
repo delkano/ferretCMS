@@ -6,17 +6,17 @@ namespace Composer\Autoload;
 
 class ComposerStaticInit760412dbff8c156999b0647f64630706
 {
-    public static $files = array (
-        '45e8c92354af155465588409ef796dbc' => __DIR__ . '/..' . '/bcosca/fatfree/lib/base.php',
+    public static $prefixLengthsPsr4 = array (
+        'S' => 
+        array (
+            'ScssPhp\\ScssPhp\\' => 16,
+        ),
     );
 
-    public static $prefixesPsr0 = array (
-        'L' => 
+    public static $prefixDirsPsr4 = array (
+        'ScssPhp\\ScssPhp\\' => 
         array (
-            'Less' => 
-            array (
-                0 => __DIR__ . '/..' . '/oyejorge/less.php/lib',
-            ),
+            0 => __DIR__ . '/..' . '/scssphp/scssphp/src',
         ),
     );
 
@@ -30,6 +30,7 @@ class ComposerStaticInit760412dbff8c156999b0647f64630706
         'CLI\\Agent' => __DIR__ . '/..' . '/bcosca/fatfree-core/cli/ws.php',
         'CLI\\WS' => __DIR__ . '/..' . '/bcosca/fatfree-core/cli/ws.php',
         'Cache' => __DIR__ . '/..' . '/bcosca/fatfree-core/base.php',
+        'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'DB\\Cortex' => __DIR__ . '/..' . '/ikkez/f3-cortex/lib/db/cortex.php',
         'DB\\CortexCollection' => __DIR__ . '/..' . '/ikkez/f3-cortex/lib/db/cortex.php',
         'DB\\CortexQueryParser' => __DIR__ . '/..' . '/ikkez/f3-cortex/lib/db/cortex.php',
@@ -73,13 +74,13 @@ class ComposerStaticInit760412dbff8c156999b0647f64630706
         'Web\\OAuth2' => __DIR__ . '/..' . '/bcosca/fatfree-core/web/oauth2.php',
         'Web\\OpenID' => __DIR__ . '/..' . '/bcosca/fatfree-core/web/openid.php',
         'Web\\Pingback' => __DIR__ . '/..' . '/bcosca/fatfree-core/web/pingback.php',
-        'lessc' => __DIR__ . '/..' . '/oyejorge/less.php/lessc.inc.php',
     );
 
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixesPsr0 = ComposerStaticInit760412dbff8c156999b0647f64630706::$prefixesPsr0;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit760412dbff8c156999b0647f64630706::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit760412dbff8c156999b0647f64630706::$prefixDirsPsr4;
             $loader->classMap = ComposerStaticInit760412dbff8c156999b0647f64630706::$classMap;
 
         }, null, ClassLoader::class);

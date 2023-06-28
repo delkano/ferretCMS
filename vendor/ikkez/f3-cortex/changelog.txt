@@ -1,5 +1,91 @@
 CHANGELOG - Cortex ORM
 
+1.7.5 (27.02.2022)
+*	fix: compare feature did not cleanup correctly old initial array values
+*	add BETWEEN to to exclude list
+
+1.7.4 (15.02.2022)
+*	fix SQL function usage with multiple parameters, #110
+*	php 8.1 fixes
+
+1.7.3 (15.03.2021)
+*	fix: getAll property on non-existing fields
+
+1.7.2 (18.02.2021)
+*	new: orHas feature
+
+1.7.1 (06.12.2020)
+*	fix primary key replacement in filter condition for custom pkeys, #106
+*	fix dry/valid after factoring new mapper from raw SQL, #109
+*	add feature to target nested fields in compare method
+*	use static return doc hint for improved IDE autocompletion
+
+1.7.0 (21.07.2020)
+*	new: field mask feature for cast
+*	new method findByRawSQL() to use find with a raw sql query
+*	new method compare() to call custom functions to prepare new / cleanup old values
+*	new method initial() which returns the initial field data after change
+*	new method cleared() which returns the initial value if the field was cleared
+*	new: allow custom timestamp in touch method
+*	added more m:m relation options for pivot tables, #103, #54
+*	added support for custom relation key usage in m:m pivot tables
+*	added error handling for broken m:m relations
+*	added failsafe for empty filter #104
+*	added failsafe for broken relations in belongs-to-many
+*	added shortcut for relation ordering, #104
+*	changed: skip reset for resolving related mappers
+*	countRel() can propagate to nested relations now
+*	refactored save / insert / update event handling, #95
+*	fixed: getAll for raw results with empty items
+*	fixed: lost filter pre-binds and count fields on load method, #99
+*	fixed: preserve logical || operator in filter condition for supported engines, #98
+*	fixed: respect nullable boolean fields when casting
+*	fixed: removed strtolower for tablename in setdown, #93
+*	Fixed an issue with missing pkeys on results that had a HAS-filter applied
+*	Fixed a bug in has( "something IN ?", array)
+*	fixed wrong adhoc var usage for has filter
+*	fixed nested has filter error, #74
+*	fixed relation type regex
+*	adjusted schema cache key name
+*	clean-up adhoc fields in count queries
+*	add possibility to exclude id in field list (for mysql 5.7+ ONLY FULL GROUP BY fix)
+*	Avoid duplicated has-many relations
+*	Avoid quoting "HAVING" and other subquery terms in filter conditions, #78
+*	handle empty arrays for deleting relations, #76
+
+1.6.0 (03.02.2019)
+*	new: defaults() method to get/set schema default values
+*	new: resetFields() method, to only reset specific fields back to defaults
+*	new: copyto_flat(), it's like copyto plus simplified exporting of relation IDs
+*	changed: return success state on load() instead of $this for better interoperability
+*	added optimized exists-strategy for has-filter, #58
+*	fix jig NULL compare on existing fields
+*	fix double pkey in group when multiple has filters are active
+*	fix error on self-reflection without DB, #67
+*	fix to avoid saving empty string date values
+*	fix loading of empty m:1 relation, #62
+*	optimize count behaviour & performance
+*	don't clear virtual fields automatically, fixes #64
+*	loosen class matching for relation configuration
+*	realign custom setter call before DT_JSON encoding, #49
+*	added DB uuid to schema cache key
+
+1.5.1 (25.04.2018)
+*	new: Cortex->getMapper to access the raw mapper
+*	added has-many <> belongs-to-one inverse save handler, which was not implemented before
+*	clear virtual fields on reset
+*	improved mongodb support
+*	apply auto-quoting to order statement, if not already quoted, #60
+*	reset internal schema cache upon setup
+*	fix Jig sorting issue on camelCase fields
+*	fix unit test for php7.2
+*	fix field matching for jig filter
+*	fix changed field check for `_id` field
+*	fix custom primary key with m:m relation usage, #56
+*	fix issue with certain whitespace in filters for mongodb
+*	fix countRel mm-table quotation
+*	fix jig order issue on count
+
 1.5.0 (30.06.2017)
 *	F3 3.6.2 compatibility fixes
 *	new: Collection->contains method
@@ -92,7 +178,7 @@ CHANGELOG - Cortex ORM
 *	added $option parameter to filter() method
 *	support for custom primary fields in SQL
 *	Bug fix: belongs-to-one linkage with non-primary fields
-*	Bug fix: don't split DB functions in where condition 
+*	Bug fix: don't split DB functions in where condition
 *	Bug fix: postgreSQL GROUP BY clause
 *	compatibility fixes for F3 v.3.2.2
 *	added NOT LIKE operator to query parser

@@ -38,8 +38,6 @@ The philosophy behind the framework and its approach to software architecture is
 
 [![Paypal](ui/images/paypal.png)](https://www.paypal.me/fatfree)
 
-![Bitcoin](ui/images/bitcoin.png)
-
 ## Table of Contents
 
 * [Getting Started](#getting-started)
@@ -55,19 +53,23 @@ The philosophy behind the framework and its approach to software architecture is
 
 [![Twitter](ui/images/twitter.png)](https://twitter.com/phpfatfree)
 
-### Version 3.6 Is Finally Released!
-
-The latest official release welcomes the new year with a bang and marks the final milestone in this version of the Fat-Free Framework. Packed with exciting new features and outstanding documentation that consumed significant time and effort to develop and refine, version 3.6 is now available for download. This edition is packed with a bunch of new usability and security features.
+### Get the latest release!
 
 F3 has a stable enterprise-class architecture. Unbeatable performance, user-friendly features and a lightweight footprint. What more can you ask for?
+To get this package, simply download this package or visit the [fatfree-core](https://github.com/bcosca/fatfree-core) repository to find the latest edge-version.
 
-It is highly recommended that experienced users develop new applications with this version to take advantage of the latest code base and its significant improvements.
+For all composer users out there:
 
-## Introducing FatFreeFramework.com
+*  start a new project using `composer create-project bcosca/fatfree`
+*  add fatfree to your existing project with `composer require bcosca/fatfree-core`
 
-**Detailed API documentation with lots of code examples and a graphic guide can now be found at [http://fatfreeframework.com/](http://fatfreeframework.com/).**
+It is highly recommended that experienced users develop new applications with the latest version to take advantage of an updated code base and ongoing improvements.
 
-Of course this handy online reference is powered by F3! It showcases the framework's capability and performance. Check it out now.
+## Please visit FatFreeFramework.com
+
+**The most up-to-date user-guide and detailed API documentation with lots of code examples and a graphic guide can be found at [fatfreeframework.com/](http://fatfreeframework.com/).**
+
+Of course this handy online reference is powered by F3! It showcases the framework's capability and performance. Check it out now. If you'd like to read it at github directly, you can find the websites content at [github.com/F3Community/F3com-data](https://github.com/F3Community/F3com-data)
 
 ## Getting Started
 
@@ -85,7 +87,7 @@ Unzip the contents of the distribution package anywhere in your hard drive. By d
 
 **Important:** If your application uses APC, Memcached, WinCache, XCache, or a filesystem cache, clear all cache entries first before overwriting an older version of the framework with a new one.
 
-Make sure you're running the right version of PHP. F3 does not support versions earlier than PHP 5.4. You'll be getting syntax errors (false positives) all over the place because new language constructs and closures/anonymous functions are not supported by outdated PHP versions. To find out, open your console (`bash` shell on GNU/Linux, or `cmd.exe` on Windows):-
+Make sure you're running the right version of PHP. F3 does not support versions earlier than PHP 5.6. You'll be getting syntax errors (false positives) all over the place because new language constructs and closures/anonymous functions are not supported by outdated PHP versions. To find out, open your console (`bash` shell on GNU/Linux, or `cmd.exe` on Windows):-
 
 ```
 /path/to/php -v
@@ -94,15 +96,14 @@ Make sure you're running the right version of PHP. F3 does not support versions 
 PHP will let you know which particular version you're running and you should get something that looks similar to this:-
 
 ```
-PHP 5.4.30 (cli) (built: Jul 22 2014 21:34:41)
-Copyright (c) 1997-2014 The PHP Group
-Zend Engine v2.4.0, Copyright (c) 1998-2014 Zend Technologies
-    with Xdebug v2.2.5, Copyright (c) 2002-2014, by Derick Rethans
+PHP 7.4.12 (cli) (built: Nov 30 2020 13:28:43) ( NTS )
+Copyright (c) The PHP Group
+Zend Engine v3.4.0, Copyright (c) Zend Technologies
+    with Xdebug v2.9.8, Copyright (c) 2002-2020, by Derick Rethans
 ```
 
-Upgrade if necessary and come back here if you've made the jump to PHP 5.4 or a later release. If you need a PHP 5.4+ hosting service provider, try one of these services:
+Upgrade if necessary and come back here if you've made the jump to PHP 7.4 or a later release. Fatfree needs at least PHP 5.6 to function. If you need a hosting service provider, try one of these services:
 
-* [A2 Hosting](http://www.a2hosting.com/2461-15-1-72.html)
 * [DreamHost](http://www.dreamhost.com/r.cgi?665472)
 * [Hostek](http://hostek.com/aff.php?aff=364&plat=L)
 * [SiteGround](http://www.siteground.com/index.htm?referrerid=155694)
@@ -280,7 +281,7 @@ $f3->reroute('@beer_list(@country=Germany,@village=Rhine)');
 
 Remember to `urlencode()` your arguments if you have characters that do not comply with RFC 1738 guidelines for well-formed URLs.
 
-### PHP 5.4's Built-In Web Server
+### PHP's Built-In Web Server
 
 PHP's latest stable version has its own built-in Web server. Start it up using the following configuration:-
 
@@ -295,11 +296,22 @@ The above command will start routing all requests to the Web root `/var/www`. If
 If you're using Apache, make sure you activate the URL rewriting module (mod_rewrite) in your apache.conf (or httpd.conf) file. You should also create a .htaccess file containing the following:-
 
 ``` apache
+# Enable rewrite engine and route requests to framework
 RewriteEngine On
+
+# Some servers require you to specify the `RewriteBase` directive
+# In such cases, it should be the path (relative to the document root)
+# containing this .htaccess file
+#
+# RewriteBase /
+
+RewriteRule ^(tmp)\/|\.ini$ - [R=404]
+
+RewriteCond %{REQUEST_FILENAME} !-l
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME} !-l
 RewriteRule .* index.php [L,QSA]
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization},L]
 ```
 
 The script tells Apache that whenever an HTTP request arrives and if no physical file (`!-f`) or path (`!-d`) or symbolic link (`!-l`) can be found, it should transfer control to `index.php`, which contains our main/front controller, and which in turn, invokes the framework.
@@ -415,7 +427,7 @@ If someone tries to access the URL `http://www.example.com/obsoletepage` using e
 
 Rerouting can be particularly useful when you need to do some maintenance work on your site. You can have a route handler that informs your visitors that your site is offline for a short period.
 
-HTTP redirects are indispensable but they can also be expensive. As much as possible, refrain from using `$f3->reroute()` to send a user to another page on the same Web site if you can direct the flow of your application by invoking the function or method that handles the target route. However, this approach will not change the URL on the address bar of the user's Web browser. If this is not the behavior you want and you really need to send a user to another page, in instances like successful submission of a form or after a user has been authenticated, Fat-Free sends an `HTTP 303 See Other` header. For all other attempts to reroute to another page or site, the framework sends an `HTTP 301 Moved Permanently` header.
+HTTP redirects are indispensable but they can also be expensive. As much as possible, refrain from using `$f3->reroute()` to send a user to another page on the same Web site if you can direct the flow of your application by invoking the function or method that handles the target route. However, this approach will not change the URL on the address bar of the user's Web browser. If this is not the behavior you want and you really need to send a user to another page, in instances like successful submission of a form or after a user has been authenticated, Fat-Free sends an `HTTP 302 Found` header. For all other attempts to reroute to another page or site, the framework sends an `HTTP 301 Moved Permanently` header.
 
 ### Triggering a 404
 
@@ -472,7 +484,7 @@ $f3->set('AUTOLOAD','admin/autoload/; user/autoload/; default/');
 
 ### Working with Namespaces
 
-`AUTOLOAD` allows class hierarchies to reside in similarly-named subfolders, so if you want the framework to autoload a PHP 5.4 namespaced class that's invoked in the following manner:-
+`AUTOLOAD` allows class hierarchies to reside in similarly-named subfolders, so if you want the framework to autoload a namespaced class that's invoked in the following manner:-
 
 ``` php
 $f3->set('AUTOLOAD','autoload/');
@@ -896,7 +908,7 @@ And populate the `@buddy` array in your PHP code before serving the template:-
 $f3->set('buddy',['Tom','Dick','Harry']);
 ```
 
-However, if you simply insert `{{ @buddy }}` in your template, PHP 5.4 will replace it with `'Array'` because it converts the token to a string. PHP 5.4, on the other hand, will generate an `Array to string conversion` notice at runtime.
+However, if you simply insert `{{ @buddy }}` in your template, PHP will replace it with `'Array'` because it converts the token to a string. PHP, on the other hand, will generate an `Array to string conversion` notice at runtime.
 
 F3 allows you to embed expressions in templates. These expressions may take on various forms, like arithmetic calculations, boolean expressions, PHP constants, etc. Here are a few examples:-
 
@@ -1488,7 +1500,7 @@ $user=new DB\SQL\Mapper($db,'users');
 // or $user=new DB\Mongo\Mapper($db,'users');
 // or $user=new DB\Jig\Mapper($db,'users');
 $user->userID='jane';
-$user->password=md5('secret');
+$user->password=password_hash('secret', PASSWORD_BCRYPT, [ 'cost' => 12 ]);
 $user->visits=0;
 $user->save();
 ```
@@ -1500,7 +1512,7 @@ A mapper object will not be empty after a `save()`. If you wish to add a new rec
 ``` php
 $user->reset();
 $user->userID='cheetah';
-$user->password=md5('unknown');
+$user->password=password_hash('unknown', PASSWORD_BCRYPT, [ 'cost' => 12 ]);
 $user->save();
 ```
 
@@ -2438,19 +2450,20 @@ The most up-to-date documentation is located at [http://fatfreeframework.com/](h
 
 ## Support and Licensing
 
-Technical support is available at the official discussion forum: [`https://groups.google.com/forum/#!forum/f3-framework`](https://groups.google.com/forum/#!forum/f3-framework). If you need live support, you can talk to the development team and other members of the F3 community via IRC. We're on the FreeNode `#fatfree` channel (`chat.freenode.net`). Visit [`http://webchat.freenode.net/`](http://webchat.freenode.net/) to join the conversation. You can also download the [Firefox Chatzilla](https://addons.mozilla.org/en-US/firefox/addon/chatzilla/) add-on or [Pidgin](http://www.pidgin.im/) if you don't have an IRC client so you can participate in the live chat.
+Technical support is available at the official discussion forum: [`https://groups.google.com/forum/#!forum/f3-framework`](https://groups.google.com/forum/#!forum/f3-framework). If you need live support, you can talk to the development team and other members of the F3 community via [Slack](https://fatfreeframework-slack.herokuapp.com/) or IRC. We're on the FreeNode `#fatfree` channel (`chat.freenode.net`). Visit [`http://webchat.freenode.net/`](http://webchat.freenode.net/) to join the conversation. You can also download the [Firefox Chatzilla](https://addons.mozilla.org/en-US/firefox/addon/chatzilla/) add-on or [Pidgin](http://www.pidgin.im/) if you don't have an IRC client so you can participate in the live chat.
+You can also find help at [Stack Overflow](http://stackoverflow.com/questions/tagged/fat-free-framework)
 
 ### Nightly Builds
 
-F3 uses Git for version control. To clone the code repository on GitHub:-
+F3 uses Git for version control. To clone the latest code repository on GitHub:
 
 ``` bash
-git clone git://github.com/bcosca/fatfree.git
+git clone git://github.com/bcosca/fatfree-core.git
 ```
 
-If all you want is a zipball, grab it [**here**](https://github.com/bcosca/fatfree/archive/dev.zip).
+If all you want is a zipball of our test bench with all unit tests, grab it [**here**](https://github.com/bcosca/fatfree/archive/dev.zip).
 
-To file a bug report, visit [`https://github.com/bcosca/fatfree/issues`](https://github.com/bcosca/fatfree/issues).
+To file a bug report, visit [`https://github.com/bcosca/fatfree-core/issues`](https://github.com/bcosca/fatfree-core/issues).
 
 ### Fair Licensing
 
@@ -2463,6 +2476,7 @@ If you feel that this software is one great weapon to have in your programming a
 The Fat-Free Framework is community-driven software. It can't be what it is today without the help and support from the following people and organizations:
 
 * GitHub
+* JetBrains
 * Stehlik & Company
 * bodalgo.com
 * Square Lines, LLC
@@ -2590,10 +2604,13 @@ Special thanks to the selfless others who expressed their desire to remain anony
 
 [![Paypal](ui/images/paypal.png)](https://www.paypal.me/fatfree)
 
-![Bitcoin](ui/images/bitcoin.png)
-
 ### Legal notice
 
 By making a donation to this project you signify that you acknowledged, understood, accepted, and agreed to the terms and conditions contained in this notice. Your donation to the Fat-Free Framework project is voluntary and is not a fee for any services, goods, or advantages, and making a donation to the project does not entitle you to any services, goods, or advantages. We have the right to use the money you donate to the Fat-Free Framework project in any lawful way and for any lawful purpose we see fit and we are not obligated to disclose the way and purpose to any party unless required by applicable law. Although Fat-Free Framework is free software, to our best knowledge this project does not have any tax-exempt status. The Fat-Free Framework project is neither a registered non-profit corporation nor a registered charity in any country. Your donation may or may not be tax-deductible; please consult this with your tax advisor. We will not publish/disclose your name and e-mail address without your consent, unless required by applicable law. Your donation is non-refundable.
 
-**Copyright (c) 2009-2017 F3::Factory/Bong Cosca &lt;bong&#46;cosca&#64;yahoo&#46;com&gt;**
+**Copyright (c) 2009-2022 F3::Factory/Bong Cosca &lt;bong&#46;cosca&#64;yahoo&#46;com&gt;**
+
+## Support on Beerpay
+Hey dude! Help me out for a couple of :beers:!
+
+[![Beerpay](https://beerpay.io/bcosca/fatfree/badge.svg?style=beer-square)](https://beerpay.io/bcosca/fatfree)  [![Beerpay](https://beerpay.io/bcosca/fatfree/make-wish.svg?style=flat-square)](https://beerpay.io/bcosca/fatfree?focus=wish)

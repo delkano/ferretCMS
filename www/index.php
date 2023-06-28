@@ -6,9 +6,6 @@ $f3 = \Base::instance();
 // F3 autoloader for application business code
 $f3->config('../config.ini');
 
-//if(!empty($f3["MULTILANG"]))
-    \Multilang::instance();
-
 if(file_exists($f3->get("DB_NAME")))  {
     $f3->set('DB', new \DB\SQL('sqlite:'.$f3->get('DB_NAME')));
 
@@ -57,7 +54,7 @@ $f3->route("GET @manifest: /manifest.json", function($f3) {
 
 // Asset management
 $f3->route('GET /assets/@type', '\Controller\Base->assets',	3600*24 );
-
+//*
 // Login and auth
 $f3->route('GET @login: /login', '\Controller\Auth->login');
 $f3->route('POST @login_check: /login_check', '\Controller\Auth->check');
@@ -106,4 +103,6 @@ $f3->route('GET @category_view: /category/@cat', '\Controller\Page->viewList');
 $f3->route('GET @category_edit: /config/category/@cat', '\Controller\Page->editList');
 $f3->route('GET @page_view: /@slug', '\Controller\Page->getOne');
 
+//if(!empty($f3["MULTILANG"]))
+    \Multilang::instance();
 $f3->run();

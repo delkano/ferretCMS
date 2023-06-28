@@ -25,17 +25,31 @@ class Test_Filter {
 		$tag_pk = (is_int(strpos($type,'sql'))?$tc['primary']:'_id');
 
 		$authorIDs = $author->find()->getAll('_id');
-		$all = $news->find();
+		$all = $news->find(null,['order'=>'id']);
 		$newsIDs = $all->getAll('_id');
+		sort($newsIDs);
 		$profileIDs = $profile->find()->getAll('_id');
 		$tagIDs = $tag->find()->getAll('_id');
 
 		// add another relation
 		$news->load(array('title = ?','CSS3 Showcase'));
-		$news->author = $author->load(array($author_pk.' = ?',$authorIDs[0]));
+		$author->load(array($author_pk.' = ?',$authorIDs[0]));
+		$news->author = $author;
 		$news->save();
 		$news->reset();
 		$author->reset();
+
+		$page=$news->paginate(0,2,null,['order'=>'title DESC']);
+		$test->expect(
+			$page['subset'][0]->get('title')=='Touchable Interfaces' &&
+			$page['subset'][1]->get('title')=='Responsive Images',
+			$type.': pagination: first page'
+		);
+		$page=$news->paginate(1,2,null,['order'=>'title DESC']);
+		$test->expect(
+			$page['subset'][0]->get('title')=='CSS3 Showcase',
+			$type.': pagination: last page'
+		);
 
 		// has-filter on belongs-to relation
 		///////////////////////////////////
@@ -259,15 +273,24 @@ class Test_Filter {
 		);
 
 		$tag->reset();
-		$tag->countRel('news');
-		$result = $tag->find(null,array('order'=>'count_news DESC, title DESC','limit'=>1,'offset'=>1))->castAll(0);
 
-		$test->expect(
-			$result[0]['title'] == 'Web Design' &&
-			$result[0]['count_news'] == 1,
-			$type.': apply limit and offset on aggregated collection'
-		);
+		if ($type != 'sqlsrv2008') {
+			$tag->countRel('news');
+			$result=$tag->find(NULL,
+				array('order'=>'count_news DESC, title DESC','limit'=>1,'offset'=>1))
+				->castAll(0);
 
+			$test->expect(
+				$result[0]['title']=='Web Design' &&
+				$result[0]['count_news']==1,
+				$type.': apply limit and offset on aggregated collection'
+			);
+		} else {
+			$test->expect(
+				false,
+				$type.': apply limit and offset on aggregated collection'
+			);
+		}
 
 		$author->reset();
 		$author->countRel('news');
@@ -283,7 +306,8 @@ class Test_Filter {
 
 
 		$author->reset();
-		$id = $author->load()->next()->_id;
+		$author->load();
+		$id = $author->next()->_id;
 		$tag->reset();
 		$tag->countRel('news');
 		$tag->has('news',array('author = ?',$id));
@@ -312,9 +336,8 @@ class Test_Filter {
 		$author = new AuthorModel();
 		$author->has('friends.news', ['title LIKE ?','%Interface%']);
 		$res = $author->find();
-		$ids = $res->getAll('_id');
 		$test->expect(
-			$res && count($res) == 2 &&
+			$res && ($ids = $res->getAll('_id')) && count($res) == 2 &&
 			in_array($authorIDs[0],$ids) && in_array($authorIDs[2],$ids),
 			$type.': has-filter, nested on self-ref relation'
 		);
@@ -323,7 +346,7 @@ class Test_Filter {
 		$author->has('friends', ['name LIKE ?','%Scott%']);
 		$author->has('news', ['title LIKE ?','%CSS%']);
 		$res = $author->find();
-		$ids = $res->getAll('_id');
+		$ids = $res ? $res->getAll('_id') : [];
 		$test->expect(
 			$res && count($res) == 1 &&
 			in_array($authorIDs[0],$ids),

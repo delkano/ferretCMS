@@ -10,6 +10,7 @@ class Config {
         $f3->set("cfg.home", \Model\Config::read("home"));
 
         $f3->set("site.title", "Site Configuration");
+        $f3->set("site.description", "Site Configuration");
         $f3->set('site.subtemplate', "configEdit");
         $f3->set('site.template', "config");
 
@@ -19,7 +20,7 @@ class Config {
     public function save($f3) {
         $title = trim($f3->get("POST.title"));
         $description = trim($f3->get("POST.description"));
-        $home = trim($f3->get("POST.home"));
+        $home = trim($f3->get("POST.home")?:"");
 
         \Model\Config::store("title", $title);
         \Model\Config::store("description", $description);

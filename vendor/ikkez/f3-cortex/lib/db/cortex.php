@@ -13,13 +13,13 @@
  *              |  |    < |    <|  -__|-- __|
  *              |__|__|__||__|__|_____|_____|
  *
- *  Copyright (c) 2017 by ikkez
+ *  Copyright (c) 2022 by ikkez
  *  Christian Knuth <mail@ikkez.de>
  *  https://github.com/ikkez/F3-Sugar/
  *
  *  @package DB
- *  @version 1.5.0
- *  @date 30.06.2017
+ *  @version 1.7.5
+ *  @date 27.02.2022
  *  @since 24.04.2012
  */
 
@@ -100,7 +100,8 @@ class Cortex extends Cursor {
 	public function __construct($db = NULL, $table = NULL, $fluid = NULL, $ttl = 0) {
 		if (!is_null($fluid))
 			$this->fluid = $fluid;
-		if (!is_object($this->db=(is_string($db=($db?:$this->db))?\Base::instance()->get($db):$db)))
+		if (!is_object($this->db=(is_string($db=($db?:$this->db))
+				? \Base::instance()->get($db):$db)) && !static::$init)
 			trigger_error(self::E_CONNECTION,E_USER_ERROR);
 		if ($this->db instanceof Jig)
 			$this->dbsType = 'jig';
@@ -120,10 +121,10 @@ class Cortex extends Cursor {
 		$this->ttl = $ttl ?: ($this->ttl ?: 60);
 		if (!$this->rel_ttl)
 			$this->rel_ttl = 0;
-		$this->_ttl = $this->rel_ttl ?: ($this->rel_ttl ?: 0);
+		$this->_ttl = $this->rel_ttl ?: 0;
 		if (static::$init == TRUE) return;
 		if ($this->fluid)
-			static::setup($this->db,$this->table,array());
+			static::setup($this->db,$this->table,[]);
 		$this->initMapper();
 	}
 
@@ -155,11 +156,19 @@ class Cortex extends Cursor {
 			$f3->get('CORTEX.smartLoading') : TRUE;
 		$this->standardiseID = $f3->exists('CORTEX.standardiseID') ?
 			$f3->get('CORTEX.standardiseID') : TRUE;
-		if(!empty($this->fieldConf))
+		if (!empty($this->fieldConf))
 			foreach($this->fieldConf as &$conf) {
-				$conf=static::resolveRelationConf($conf);
+				$conf=static::resolveRelationConf($conf, $this->primary);
 				unset($conf);
 			}
+	}
+
+	/**
+	 * return raw mapper instance
+	 * @return Cursor
+	 */
+	public function getMapper() {
+		return $this->mapper;
 	}
 
 	/**
@@ -168,7 +177,7 @@ class Cortex extends Cursor {
 	 * @param bool  $exclude
 	 * @return array
 	 */
-	public function fields(array $fields=array(), $exclude=false) {
+	public function fields(array $fields=[], $exclude=false) {
 		$addInc=[];
 		if ($fields)
 			// collect & set restricted fields for related mappers
@@ -182,7 +191,8 @@ class Cortex extends Cursor {
 		$fields = array_unique($fields);
 		$schema = $this->whitelist ?: $this->mapper->fields();
 		if (!$schema && $this->dbsType != 'sql' && $this->dry()) {
-			$schema = $this->load()->mapper->fields();
+			$this->load();
+			$schema = $this->mapper->fields();
 			$this->reset();
 		}
 		// include relation linkage fields to $fields (if $fields is a whitelist)
@@ -203,7 +213,7 @@ class Cortex extends Cursor {
 		} else
 			$this->whitelist=$fields;
 		$id=$this->dbsType=='sql'?$this->primary:'_id';
-		if (!in_array($id,$this->whitelist))
+		if (!in_array($id,$this->whitelist) && !($exclude && in_array($id,$fields)))
 			$this->whitelist[]=$id;
 		$this->applyWhitelist();
 		return $this->whitelist;
@@ -215,11 +225,11 @@ class Cortex extends Cursor {
 	protected function applyWhitelist() {
 		if ($this->dbsType == 'sql') {
 			// fetch full schema
-			if (!$this->fluid && isset(self::$schema_cache[$this->table]))
-				$schema = self::$schema_cache[$this->table];
+			if (!$this->fluid && isset(self::$schema_cache[$key=$this->table.'_'.$this->db->uuid()]))
+				$schema = self::$schema_cache[$key];
 			else {
 				$schema = $this->mapper->schema();
-				self::$schema_cache[$this->table] = $schema;
+				self::$schema_cache[$this->table.'_'.$this->db->uuid()] = $schema;
 			}
 			// apply reduced fields schema
 			if ($this->whitelist)
@@ -262,14 +272,14 @@ class Cortex extends Cursor {
 		static::$init=true;
 		$self = new static();
 		static::$init=false;
-		$conf = array (
+		$conf = [
 			'table'=>$self->getTable(),
 			'fieldConf'=>$self->getFieldConfiguration(),
 			'db'=>$self->db,
 			'fluid'=>$self->fluid,
 			'primary'=>$self->primary,
 			'charset'=>$self->charset,
-		);
+		];
 		unset($self);
 		return $conf;
 	}
@@ -283,8 +293,8 @@ class Cortex extends Cursor {
 	}
 
 	/**
-	 * returns the collection where this model lives in
-	 * @return CortexCollection
+	 * returns the collection where this model lives in, or false
+	 * @return CortexCollection|bool
 	 */
 	protected function getCollection() {
 		return ($this->collection && $this->smartLoading)
@@ -312,6 +322,7 @@ class Cortex extends Cursor {
 	static public function setup($db=null, $table=null, $fields=null) {
 		/** @var Cortex $self */
 		$self = get_called_class();
+		$self::$schema_cache=[];
 		if (is_null($db) || is_null($table) || is_null($fields))
 			$df = $self::resolveConfiguration();
 		if (!is_object($db=(is_string($db=($db?:$df['db']))?\Base::instance()->get($db):$db)))
@@ -325,7 +336,7 @@ class Cortex extends Cursor {
 				trigger_error(self::E_FIELD_SETUP,E_USER_ERROR);
 				return false;
 			} else
-				$fields = array();
+				$fields = [];
 		if ($db instanceof SQL) {
 			$schema = new Schema($db);
 			// prepare field configuration
@@ -346,11 +357,12 @@ class Cortex extends Cursor {
 								static::getMMTableName($rel['table'], $relConf['relField'],
 									$table, $key, $rel['fieldConf'][$relConf[1]]['has-many']);
 							if (!in_array($mmTable,$schema->getTables())) {
+								$toConf = $relConf[0]::resolveRelationConf($rel['fieldConf'][$relConf[1]]);
 								$mmt = $schema->createTable($mmTable);
-								$relField = $relConf['relField'].($relConf['isSelf']?'_ref':'');
+								$relField = $relConf['isSelf']?$relConf['selfRefField']:$relConf['relField'];
 								$mmt->addColumn($relField)->type($relConf['relFieldType']);
-								$mmt->addColumn($key)->type($field['type']);
-								$index = array($relField,$key);
+								$mmt->addColumn($toConf['has-many']['relField'])->type($field['type']);
+								$index = [$relField,$toConf['has-many']['relField']];
 								sort($index);
 								$mmt->addIndex($index);
 								$mmt->build();
@@ -366,7 +378,7 @@ class Cortex extends Cursor {
 					continue;
 				}
 				// transform array fields
-				if (in_array($field['type'], array(self::DT_JSON, self::DT_SERIALIZED)))
+				if (in_array($field['type'], [self::DT_JSON, self::DT_SERIALIZED]))
 					$field['type']=$schema::DT_TEXT;
 				// defaults values
 				if (!array_key_exists('nullable', $field))
@@ -413,13 +425,13 @@ class Cortex extends Cursor {
 			$df = $self::resolveConfiguration();
 		if (!is_object($db=(is_string($db=($db?:$df['db']))?\Base::instance()->get($db):$db)))
 			trigger_error(self::E_CONNECTION,E_USER_ERROR);
-		if (strlen($table=strtolower($table?:$df['table']))==0)
+		if (strlen($table=($table?:$df['table']))==0)
 			trigger_error(self::E_NO_TABLE,E_USER_ERROR);
 		if (isset($df) && !empty($df['fieldConf']))
 			$fields = $df['fieldConf'];
 		else
-			$fields = array();
-		$deletable = array();
+			$fields = [];
+		$deletable = [];
 		$deletable[] = $table;
 		foreach ($fields as $key => $field) {
 			$field = static::resolveRelationConf($field);
@@ -473,20 +485,17 @@ class Cortex extends Cursor {
 			list($fclass, $pfkey) = $fConf;
 			$self = get_called_class();
 			// check for a matching config
-			if (!is_int(strpos($fclass, $self)))
-				trigger_error(sprintf(self::E_MM_REL_CLASS, $fclass, $self),E_USER_ERROR);
 			if ($pfkey != $pkey)
 				trigger_error(sprintf(self::E_MM_REL_FIELD,
 					$fclass.'.'.$pfkey, $self.'.'.$pkey),E_USER_ERROR);
 		}
-		$mmTable = array($ftable.'__'.$fkey, $ptable.'__'.$pkey);
+		$mmTable = [$ftable.'__'.$fkey, $ptable.'__'.$pkey];
 		natcasesort($mmTable);
 		// shortcut for self-referencing mm tables
 		if ($mmTable[0] == $mmTable[1] ||
 			($fConf && isset($fConf['isSelf']) && $fConf['isSelf']==true))
 			return array_shift($mmTable);
-		$return = strtolower(str_replace('\\', '_', implode('_mm_', $mmTable)));
-		return $return;
+		return strtolower(str_replace('\\', '_', implode('_mm_', $mmTable)));
 	}
 
 	/**
@@ -511,13 +520,14 @@ class Cortex extends Cursor {
 	/**
 	 * resolve relation field types
 	 * @param array $field
+	 * @param string $pkey
 	 * @return array
 	 */
-	protected static function resolveRelationConf($field) {
+	protected static function resolveRelationConf($field,$pkey=NULL) {
 		if (array_key_exists('belongs-to-one', $field)) {
 			// find primary field definition
 			if (!is_array($relConf = $field['belongs-to-one']))
-				$relConf = array($relConf, '_id');
+				$relConf = [$relConf, '_id'];
 			// set field type
 			if ($relConf[1] == '_id')
 				$field['type'] = Schema::DT_INT4;
@@ -543,15 +553,29 @@ class Cortex extends Cursor {
 			if(!is_array($relConf))
 				return $field;
 			$rel = $relConf[0]::resolveConfiguration();
-			if(array_key_exists('has-many',$rel['fieldConf'][$relConf[1]])) {
+			if (array_key_exists('has-many',$rel['fieldConf'][$relConf[1]])) {
 				// has-many <> has-many (m:m)
 				$field['has-many']['hasRel'] = 'has-many';
 				$field['has-many']['isSelf'] = (ltrim($relConf[0],'\\')==get_called_class());
 				$field['has-many']['relTable'] = $rel['table'];
-				$field['has-many']['relField'] = $relConf[1];
+				$field['has-many']['relField'] = $relField =
+					isset($relConf['relField']) ? $relConf['relField'] : $relConf[1];
+				$field['has-many']['selfRefField'] = $relField.'_ref';
 				$field['has-many']['relFieldType'] = isset($rel['fieldConf'][$relConf[1]]['type']) ?
 					$rel['fieldConf'][$relConf[1]]['type'] : Schema::DT_INT;
-				$field['has-many']['relPK'] = isset($relConf[3])?$relConf[3]:$rel['primary'];
+				if (isset($rel['fieldConf'][$relConf[1]]['has-many']['relPK'])) {
+					$field['has-many']['relPK'] = $rel['fieldConf'][$relConf[1]]['has-many']['relPK'];
+					$field['type'] = $rel['fieldConf'][$rel['fieldConf'][$relConf[1]]['has-many']['relPK']]['type'];
+				}
+				elseif (isset($relConf['relPK'])) {
+					$selfConf = static::resolveConfiguration();
+					$field['has-many']['relPK'] = $relConf['relPK'];
+					$field['has-many']['relFieldType'] = $selfConf['fieldConf'][$relConf['relPK']]['type'];
+				}
+				else
+					$field['has-many']['relPK'] = $rel['primary'];
+				$field['has-many']['localKey'] = isset($relConf['localKey'])?
+					$relConf['localKey']:($pkey?:'_id');
 			} else {
 				// has-many <> belongs-to-one (m:1)
 				$field['has-many']['hasRel'] = 'belongs-to-one';
@@ -582,7 +606,7 @@ class Cortex extends Cursor {
 	 * @param array|null $filter
 	 * @param array|null $options
 	 * @param int        $ttl
-	 * @return CortexCollection
+	 * @return static[]|false
 	 */
 	public function find($filter = NULL, array $options = NULL, $ttl = 0) {
 		$sort=false;
@@ -639,14 +663,16 @@ class Cortex extends Cursor {
 	 * @return array|int|false array of underlying cursor objects
 	 */
 	protected function filteredFind($filter = NULL, array $options = NULL, $ttl = 0, $count=false) {
+		if (empty($filter))
+			$filter = NULL;
 		if ($this->grp_stack) {
 			if ($this->dbsType == 'mongo') {
-				$group = array(
+				$group = [
 					'keys' => $this->grp_stack['keys'],
 					'reduce' => 'function (obj, prev) {'.$this->grp_stack['reduce'].'}',
 					'initial' => $this->grp_stack['initial'],
 					'finalize' => $this->grp_stack['finalize'],
-				);
+				];
 				if ($options && isset($options['group'])) {
 					if(is_array($options['group']))
 						$options['group'] = array_merge($options['group'],$group);
@@ -657,7 +683,7 @@ class Cortex extends Cursor {
 						$options['group'] = $group;
 					}
 				} else
-					$options = array('group'=>$group);
+					$options = ['group'=>$group];
 			}
 			if($this->dbsType == 'sql') {
 				if ($options && isset($options['group']))
@@ -675,15 +701,31 @@ class Cortex extends Cursor {
 			$m_ad_prop->setAccessible(false);
 			unset($m_ad_prop,$m_refl);
 		}
-		$hasJoin = array();
+		// sorting by relation helper: @field.field
+		if ($this->dbsType == 'sql' && !empty($options['order'])
+			&& strpos($options['order'], '@') !== FALSE) {
+			$options['order']=preg_replace_callback(
+				'/(?:^|[\h,])+(@([\w\-\d]+)\.)/i', function($match) {
+					if (isset($this->fieldConf[ $match[2] ])) {
+						$rel = $this->rel($match[2]);
+						// having a has filter on that relation is mandatory
+						if (!isset($this->hasCond[$match[2]]))
+							$this->has($match[2],null,null);
+						return $rel->getTable().'__'.$match[2].'.';
+					}
+					return $match[1];
+				}, $options['order']);
+		}
+		$hasJoin = [];
 		if ($this->hasCond) {
 			foreach($this->hasCond as $key => $hasCond) {
 				$addToFilter = null;
 				if ($deep = is_int(strpos($key,'.'))) {
 					$key = rtrim($key,'.');
-					$hasCond = array(null,null);
+					$hasCond = [null,null];
 				}
 				list($has_filter,$has_options) = $hasCond;
+				$isOrCondition = isset($has_options['OR']) ? $has_options['OR'] : FALSE;
 				$type = $this->fieldConf[$key]['relType'];
 				$fromConf = $this->fieldConf[$key][$type];
 				switch($type) {
@@ -701,9 +743,13 @@ class Cortex extends Cursor {
 								&& !isset($has_options['limit']) && !isset($has_options['offset'])) {
 								$hasJoin = array_merge($hasJoin,
 									$this->_hasJoinMM_sql($key,$hasCond,$filter,$options));
-								$options['group'] = (isset($options['group'])?$options['group'].',':'').
-									$this->table.'.'.$this->primary;
+								if (!isset($options['group']))
+									$options['group'] = '';
 								$groupFields = explode(',', preg_replace('/"/','',$options['group']));
+								if (!in_array($this->table.'.'.$this->primary,$groupFields)) {
+									$options['group'] = ($options['group']?',':'').$this->table.'.'.$this->primary;
+									$groupFields[]=$this->table.'.'.$this->primary;
+								}
 								// all non-aggregated fields need to be present in the GROUP BY clause
 								if (isset($m_refl_adhoc) && preg_match('/sybase|dblib|odbc|sqlsrv/i',$this->db->driver()))
 									foreach (array_diff($this->mapper->fields(),array_keys($m_refl_adhoc)) as $field)
@@ -711,23 +757,31 @@ class Cortex extends Cursor {
 											$options['group'] .= ', '.$this->table.'.'.$field;
 							}
 							elseif ($result = $this->_hasRefsInMM($key,$has_filter,$has_options,$ttl))
-								$addToFilter = array($id.' IN ?', $result);
-						} // *-to-one
+								$addToFilter = [$id.' IN ?', $result];
+						}
+						// *-to-one
+						elseif (!$deep && $this->dbsType == 'sql') {
+							// use sub-query inclusion
+							$has_filter=$this->mergeFilter([$has_filter,
+								[$this->rel($key)->getTable().'.'.$fromConf[1].'='.$this->getTable().'.'.$id]]);
+							$result = $this->_refSubQuery($key,$has_filter,$has_options);
+							$addToFilter = array_merge(['exists('.$result[0].')'],$result[1]);
+						}
 						elseif ($result = $this->_hasRefsIn($key,$has_filter,$has_options,$ttl))
-							$addToFilter = array($id.' IN ?', $result);
+							$addToFilter = [$id.' IN ?', $result];
 						break;
 					// one-to-*
 					case 'belongs-to-one':
 						if (!$deep && $this->dbsType == 'sql'
 							&& !isset($has_options['limit']) && !isset($has_options['offset'])) {
 							if (!is_array($fromConf))
-								$fromConf = array($fromConf, '_id');
+								$fromConf = [$fromConf, '_id'];
 							$rel = $fromConf[0]::resolveConfiguration();
 							if ($this->dbsType == 'sql' && $fromConf[1] == '_id')
 								$fromConf[1] = $rel['primary'];
 							$hasJoin[] = $this->_hasJoin_sql($key,$rel['table'],$hasCond,$filter,$options);
 						} elseif ($result = $this->_hasRefsIn($key,$has_filter,$has_options,$ttl))
-								$addToFilter = array($key.' IN ?', $result);
+								$addToFilter = [$key.' IN ?', $result];
 						break;
 					default:
 						trigger_error(self::E_HAS_COND,E_USER_ERROR);
@@ -736,9 +790,9 @@ class Cortex extends Cursor {
 					return false;
 				elseif (isset($addToFilter)) {
 					if (!$filter)
-						$filter = array('');
+						$filter = [''];
 					if (!empty($filter[0]))
-						$filter[0] .= ' and ';
+						$filter[0] .= $isOrCondition?' or ':' and ';
 					$cond = array_shift($addToFilter);
 					if ($this->dbsType=='sql')
 						$cond = $this->queryParser->sql_prependTableToFields($cond,$this->table);
@@ -748,36 +802,54 @@ class Cortex extends Cursor {
 			}
 			$this->hasCond = null;
 		}
-		$filter = $this->queryParser->prepareFilter($filter, $this->dbsType, $this->db, $this->fieldConf);
+		$filter = $this->queryParser->prepareFilter($filter, $this->dbsType, $this->db, $this->fieldConf, $this->primary);
 		if ($this->dbsType=='sql') {
 			$qtable = $this->db->quotekey($this->table);
 			if (isset($options['order']) && $this->db->driver() == 'pgsql')
 				// PostgreSQLism: sort NULL values to the end of a table
-				$options['order'] = preg_replace('/\h+DESC/i',' DESC NULLS LAST',$options['order']);
+				$options['order'] = preg_replace('/\h+DESC(?=\s*(?:$|,))/i',' DESC NULLS LAST',$options['order']);
+			// assemble full sql query for joined queries
 			if ($hasJoin) {
-				// assemble full sql query
-				$adhoc='';
-				if ($count)
-					$sql = 'SELECT COUNT(*) AS '.$this->db->quotekey('rows').' FROM '.$qtable;
-				else {
+				$adhoc=[];
+				// when in count-mode and grouping is active, wrap the query later
+				// otherwise add a an adhoc counter field here
+				if (!($subquery_mode=($options && !empty($options['group']))) && $count)
+					$adhoc[]='(COUNT(*)) as _rows';
+				if (!$count)
+					// add bind parameters for filters in adhoc fields
 					if ($this->preBinds) {
 						$crit = array_shift($filter);
 						$filter = array_merge($this->preBinds,$filter);
 						array_unshift($filter,$crit);
 					}
-					if (!empty($m_refl_adhoc))
-						foreach ($m_refl_adhoc as $key=>$val)
-							$adhoc.=', '.$val['expr'].' AS '.$this->db->quotekey($key);
-					$sql = 'SELECT '.$qtable.'.*'.$adhoc.' FROM '.$qtable;
+				if (!empty($m_refl_adhoc))
+					// add adhoc field expressions
+					foreach ($m_refl_adhoc as $key=>$val)
+						$adhoc[]=$val['expr'].' AS '.$this->db->quotekey($key);
+				$fields=implode(',',$adhoc);
+				if ($count && $subquery_mode) {
+					if (empty($fields))
+						// Select at least one field, ideally the grouping fields or sqlsrv fails
+						$fields=preg_replace('/HAVING.+$/i','',$options['group']);
+					if (preg_match('/mssql|dblib|sqlsrv/',$this->db->driver()))
+						$fields='TOP 100 PERCENT '.$fields;
 				}
-				$sql .= ' '.implode(' ',$hasJoin).' WHERE '.$filter[0];
+				if (!$count)
+					// add only selected fields to field list
+					$fields.=($fields?', ':'').implode(', ',array_map(function($field) use($qtable){
+						return $qtable.'.'.$this->db->quotekey($field);
+					},array_diff($this->mapper->fields(),array_keys($m_refl_adhoc))));
+				// assemble query
+				$sql = 'SELECT '.$fields.' FROM '.$qtable.' '
+					.implode(' ',$hasJoin).($filter ? ' WHERE '.$filter[0] : '');
+				$db=$this->db;
+				// add grouping in both, count & selection mode
+				if (isset($options['group']))
+					$sql.=' GROUP BY '.preg_replace_callback('/\w+[._\-\w]*/i',
+						function($match) use($db) {
+							return $db->quotekey($match[0]);
+						}, $options['group']);
 				if (!$count) {
-					$db=$this->db;
-					if (isset($options['group']))
-						$sql.=' GROUP BY '.preg_replace_callback('/\w+[._\-\w]*/i',
-							function($match) use($db) {
-								return $db->quotekey($match[0]);
-							}, $options['group']);
 					if (isset($options['order']))
 						$sql.=' ORDER BY '.implode(',',array_map(
 							function($str) use($db) {
@@ -787,12 +859,13 @@ class Cortex extends Cursor {
 										(isset($parts[2])?(' '.$parts[2]):'')):$str;
 							},
 							explode(',',$options['order'])));
+					// SQL Server fixes
 					if (preg_match('/mssql|sqlsrv|odbc/', $this->db->driver()) &&
 						(isset($options['limit']) || isset($options['offset']))) {
 						$ofs=isset($options['offset'])?(int)$options['offset']:0;
 						$lmt=isset($options['limit'])?(int)$options['limit']:0;
 						if (strncmp($this->db->version(),'11',2)>=0) {
-							// SQL Server 2012
+							// SQL Server >= 2012
 							if (!isset($options['order']))
 								$sql.=' ORDER BY '.$this->db->quotekey($this->primary);
 							$sql.=' OFFSET '.$ofs.' ROWS'.($lmt?' FETCH NEXT '.$lmt.' ROWS ONLY':'');
@@ -810,35 +883,56 @@ class Cortex extends Cursor {
 						if (isset($options['offset']))
 							$sql.=' OFFSET '.(int)$options['offset'];
 					}
-				}
+				} elseif ($subquery_mode)
+					// wrap count query if necessary
+					$sql='SELECT COUNT(*) AS '.$this->db->quotekey('_rows').' '.
+						'FROM ('.$sql.') AS '.$this->db->quotekey('_temp');
 				unset($filter[0]);
 				$result = $this->db->exec($sql, $filter, $ttl);
 				if ($count)
-					return $result[0]['rows'];
+					return $result[0]['_rows'];
 				foreach ($result as &$record) {
 					// factory new mappers
-					$mapper = clone($this->mapper);
-					$mapper->reset();
-					$mapper->query= array($record);
-					foreach ($record as $key=>$val)
-						$mapper->set($key, $val);
-					$record = $mapper;
-					unset($record, $mapper);
+					$record = $this->mapper->factory($record);
+					unset($record);
 				}
 				return $result;
-			} elseif (!empty($this->preBinds)) {
+			} elseif (!empty($this->preBinds) && !$count) {
 				// bind values to adhoc queries
 				if (!$filter)
 					// we (PDO) need any filter to bind values
-					$filter = array('1=1');
+					$filter = ['1=1'];
 				$crit = array_shift($filter);
 				$filter = array_merge($this->preBinds,$filter);
 				array_unshift($filter,$crit);
 			}
 		}
+		if ($options) {
+			$options = $this->queryParser->prepareOptions($options,$this->dbsType,$this->db);
+			if ($count)
+				unset($options['order']);
+		}
 		return ($count)
 			? $this->mapper->count($filter,$options,$ttl)
-			: $this->mapper->find($filter,$this->queryParser->prepareOptions($options,$this->dbsType),$ttl);
+			: $this->mapper->find($filter,$options,$ttl);
+	}
+
+	/**
+	 * use a raw sql query to find results and factory them into models
+	 * @param $sql
+	 * @param null $args
+	 * @param int $ttl
+	 * @return static[]
+	 */
+	public function findByRawSQL($query, $args=NULL, $ttl=0) {
+		$result = $this->db->exec($query, $args, $ttl);
+		$cx = new CortexCollection();
+		foreach($result as $row) {
+			$new = $this->factory($row);
+			$cx->add($new);
+			unset($new);
+		}
+		return $cx;
 	}
 
 	/**
@@ -846,19 +940,20 @@ class Cortex extends Cursor {
 	 * @param null  $filter
 	 * @param array $options
 	 * @param int   $ttl
-	 * @return Cortex
+	 * @return bool
 	 */
 	public function load($filter = NULL, array $options = NULL, $ttl = 0) {
-		$this->reset();
+		$this->reset(TRUE, FALSE);
 		$this->_ttl=$ttl?:$this->rel_ttl;
 		$res = $this->filteredFind($filter, $options, $ttl);
 		if ($res) {
 			$this->mapper->query = $res;
-			$this->first();
+			$this->reset(FALSE, FALSE);
+			$this->mapper->first();
 		} else
 			$this->mapper->reset();
 		$this->emit('load');
-		return $this;
+		return $this->valid();
 	}
 
 	/**
@@ -870,20 +965,33 @@ class Cortex extends Cursor {
 	 */
 	public function has($key, $filter, $options = null) {
 		if (is_string($filter))
-			$filter=array($filter);
+			$filter=[$filter];
 		if (is_int(strpos($key,'.'))) {
 			list($key,$fkey) = explode('.',$key,2);
 			if (!isset($this->hasCond[$key.'.']))
-				$this->hasCond[$key.'.'] = array();
-			$this->hasCond[$key.'.'][$fkey] = array($filter,$options);
+				$this->hasCond[$key.'.'] = [];
+			$this->hasCond[$key.'.'][$fkey] = [$filter,$options];
 		} else {
 			if (!isset($this->fieldConf[$key]))
 				trigger_error(sprintf(self::E_UNKNOWN_FIELD,$key,get_called_class()),E_USER_ERROR);
 			if (!isset($this->fieldConf[$key]['relType']))
 				trigger_error(self::E_HAS_COND,E_USER_ERROR);
-			$this->hasCond[$key] = array($filter,$options);
+			$this->hasCond[$key] = [$filter,$options];
 		}
 		return $this;
+	}
+
+	/**
+	 * add has-conditional filter with OR operator to previous condition
+	 * @param $key
+	 * @param $filter
+	 * @param null $options
+	 */
+	public function orHas($key, $filter, $options = null) {
+		if (!$options)
+			$options=[];
+		$options['OR'] = TRUE;
+		$this->has($key, $filter, $options);
 	}
 
 	/**
@@ -907,6 +1015,22 @@ class Cortex extends Cursor {
 	}
 
 	/**
+	 * build sub query on relation
+	 * @param $key
+	 * @param $filter
+	 * @param $options
+	 * @return mixed
+	 */
+	protected function _refSubQuery($key, $filter, $options,$fields=null) {
+		$type = $this->fieldConf[$key]['relType'];
+		$fieldConf = $this->fieldConf[$key][$type];
+		$rel = $this->getRelFromConf($fieldConf,$key);
+		$filter[0]=$this->queryParser->sql_quoteCondition($filter[0],$this->db);
+		return $rel->mapper->stringify(implode(',',array_map([$this->db,'quotekey'],
+			$fields?:[$rel->primary])),$filter,$options);
+	}
+
+	/**
 	 * return IDs of own mappers that match the given relation filter on pivot tables
 	 * @param string $key
 	 * @param array $filter
@@ -922,10 +1046,12 @@ class Cortex extends Cursor {
 		if ($hasSet) {
 			$hasIDs = $hasSet->getAll('_id',true);
 			$mmTable = $this->mmTable($fieldConf,$key);
-			$pivot = $this->getRelInstance(null,array('db'=>$this->db,'table'=>$mmTable));
-			$filter = [$key.' IN ?',$hasIDs];
+			$pivot = $this->getRelInstance(null,['db'=>$this->db,'table'=>$mmTable]);
+			$rel = $fieldConf[0]::resolveConfiguration();
+			$toConf = $fieldConf[0]::resolveRelationConf($rel['fieldConf'][$fieldConf[1]]);
+			$filter = [$toConf['has-many']['relField'].' IN ?',$hasIDs];
 			if ($fieldConf['isSelf']) {
-				$filter[0].= ' OR '.$key.'_ref IN ?';
+				$filter[0].= ' OR '.$fieldConf['selfRefField'].' IN ?';
 				$filter[] = $hasIDs;
 			}
 			$pivotSet = $pivot->find($filter,null,$ttl);
@@ -933,7 +1059,7 @@ class Cortex extends Cursor {
 				$result = $pivotSet->getAll($fieldConf['relField'],true);
 				if ($fieldConf['isSelf'])
 					$result = array_merge($result,
-						$pivotSet->getAll($fieldConf['relField'].'_ref',true));
+						$pivotSet->getAll($fieldConf['selfRefField'],true));
 				$result = array_diff(array_unique($result),$hasIDs);
 			}
 		}
@@ -946,24 +1072,27 @@ class Cortex extends Cursor {
 	protected function _hasJoinMM_sql($key, $hasCond, &$filter, &$options) {
 		$fieldConf = $this->fieldConf[$key]['has-many'];
 		$relTable = $fieldConf['relTable'];
-		$hasJoin = array();
+		$hasJoin = [];
 		$mmTable = $this->mmTable($fieldConf,$key);
 		if ($fieldConf['isSelf']) {
 			$relTable .= '_ref';
-			$hasJoin[] = $this->_sql_left_join($this->primary,$this->table,$fieldConf['relField'].'_ref',$mmTable);
-			$hasJoin[] = $this->_sql_left_join($key,$mmTable,$fieldConf['relPK'],
+			$hasJoin[] = $this->_sql_left_join($this->primary,$this->table,$fieldConf['selfRefField'],$mmTable);
+			$hasJoin[] = $this->_sql_left_join($fieldConf['relField'],$mmTable,$fieldConf['relPK'],
 				[$fieldConf['relTable'],$relTable]);
 			// cross-linked
 			$hasJoin[] = $this->_sql_left_join($this->primary,$this->table,
 				$fieldConf['relField'],[$mmTable,$mmTable.'_c']);
-			$hasJoin[] = $this->_sql_left_join($key.'_ref',$mmTable.'_c',$fieldConf['relPK'],
+			$hasJoin[] = $this->_sql_left_join($fieldConf['selfRefField'],$mmTable.'_c',$fieldConf['relPK'],
 				[$fieldConf['relTable'],$relTable.'_c']);
 			$this->_sql_mergeRelCondition($hasCond,$relTable,$filter,$options);
 			$this->_sql_mergeRelCondition($hasCond,$relTable.'_c',$filter,$options,'OR');
 		} else {
 			$hasJoin[] = $this->_sql_left_join($this->primary,$this->table,$fieldConf['relField'],$mmTable);
-			$hasJoin[] = $this->_sql_left_join($key,$mmTable,$fieldConf['relPK'],$relTable);
-			$this->_sql_mergeRelCondition($hasCond,$relTable,$filter,$options);
+			$rel = $fieldConf[0]::resolveConfiguration();
+			$toConf = $fieldConf[0]::resolveRelationConf($rel['fieldConf'][$fieldConf[1]])['has-many'];
+			$hasJoin[] = $this->_sql_left_join($toConf['relField'],$mmTable,$fieldConf['relPK'],$relTable);
+			$glue = isset($cond[1]['OR']) && $cond[1]['OR']===TRUE ? 'OR' : 'AND';
+			$this->_sql_mergeRelCondition($hasCond,$relTable,$filter,$options, $glue);
 		}
 		return $hasJoin;
 	}
@@ -979,7 +1108,8 @@ class Cortex extends Cursor {
 			$this->fieldConf[$key]['belongs-to-one'][1] : $rel->primary;
 		$alias = $table.'__'.$key;
 		$query = $this->_sql_left_join($key,$this->table,$fkey,[$table,$alias]);
-		$this->_sql_mergeRelCondition($cond,$alias,$filter,$options);
+		$glue = isset($cond[1]['OR']) && $cond[1]['OR']===TRUE ? 'OR' : 'AND';
+		$this->_sql_mergeRelCondition($cond,$alias,$filter,$options, $glue);
 		return $query;
 	}
 
@@ -1018,7 +1148,7 @@ class Cortex extends Cursor {
 			$whereClause = '('.array_shift($cond[0]).')';
 			$whereClause = $this->queryParser->sql_prependTableToFields($whereClause,$table);
 			if (!$filter)
-				$filter = array($whereClause);
+				$filter = [$whereClause];
 			elseif (!empty($filter[0]))
 				$filter[0] = '('.$this->queryParser->sql_prependTableToFields($filter[0],$this->table)
 					.') '.$glue.' '.$whereClause;
@@ -1041,10 +1171,10 @@ class Cortex extends Cursor {
 		if (is_int(strpos($key,'.'))) {
 			list($key,$fkey) = explode('.',$key,2);
 			if (!isset($this->relFilter[$key.'.']))
-				$this->relFilter[$key.'.'] = array();
-			$this->relFilter[$key.'.'][$fkey] = array($filter,$option);
+				$this->relFilter[$key.'.'] = [];
+			$this->relFilter[$key.'.'][$fkey] = [$filter,$option];
 		} else
-			$this->relFilter[$key] = array($filter,$option);
+			$this->relFilter[$key] = [$filter,$option];
 		return $this;
 	}
 
@@ -1054,7 +1184,7 @@ class Cortex extends Cursor {
 	 */
 	public function clearFilter($key = null) {
 		if (!$key)
-			$this->relFilter = array();
+			$this->relFilter = [];
 		elseif(isset($this->relFilter[$key]))
 			unset($this->relFilter[$key]);
 	}
@@ -1068,7 +1198,7 @@ class Cortex extends Cursor {
 	protected function mergeWithRelFilter($key, $crit) {
 		if (array_key_exists($key, $this->relFilter) &&
 			!empty($this->relFilter[$key][0]))
-			$crit=$this->mergeFilter(array($this->relFilter[$key][0],$crit));
+			$crit=$this->mergeFilter([$this->relFilter[$key][0],$crit]);
 		return $crit;
 	}
 
@@ -1079,10 +1209,12 @@ class Cortex extends Cursor {
 	 * @return array
 	 */
 	public function mergeFilter($filters, $glue='and') {
-		$crit = array();
-		$params = array();
+		$crit = [];
+		$params = [];
 		if ($filters) {
 			foreach($filters as $filter) {
+				if (!$filter)
+					continue;
 				$crit[] = array_shift($filter);
 				$params = array_merge($params,$filter);
 			}
@@ -1108,7 +1240,7 @@ class Cortex extends Cursor {
 	 * @return bool
 	 */
 	public function erase($filter = null) {
-		$filter = $this->queryParser->prepareFilter($filter, $this->dbsType, $this->db);
+		$filter = $this->queryParser->prepareFilter($filter, $this->dbsType, $this->db,null,$this->primary);
 		if (!$filter) {
 			if ($this->emit('beforeerase')===false)
 				return false;
@@ -1117,11 +1249,11 @@ class Cortex extends Cursor {
 				foreach($this->fieldConf as $key => $conf)
 					if (isset($conf['has-many']) &&
 						$conf['has-many']['hasRel']=='has-many') {
-						$rel = $this->getRelInstance(null, array(
+						$rel = $this->getRelInstance(null, [
 							'db'=>$this->db,
-							'table'=>$this->mmTable($conf['has-many'],$key)));
+							'table'=>$this->mmTable($conf['has-many'],$key)]);
 						$id = $this->get($conf['has-many']['relPK'],true);
-						$rel->erase(array($conf['has-many']['relField'].' = ?', $id));
+						$rel->erase([$conf['has-many']['relField'].' = ?', $id]);
 					}
 			}
 			$this->mapper->erase();
@@ -1132,69 +1264,114 @@ class Cortex extends Cursor {
 	}
 
 	/**
-	 * Save mapped record
-	 * @return mixed
-	 **/
-	function save() {
+	 * prepare mapper for save operation
+	 */
+	protected function _beforesave() {
 		// update changed collections
-		$fields = $this->fieldConf;
-		if ($fields)
-			foreach($fields as $key=>$conf)
-				if (!empty($this->fieldsCache[$key]) && $this->fieldsCache[$key] instanceof CortexCollection
-					&& $this->fieldsCache[$key]->hasChanged())
-					$this->set($key,$this->fieldsCache[$key]->getAll('_id',true));
-		// perform event & save operations
-		if ($new = $this->dry()) {
-			if ($this->emit('beforeinsert')===false)
-				return false;
-			$result=$this->insert();
-		} else {
-			if ($this->emit('beforeupdate')===false)
-				return false;
-			$result=$this->update();
-		}
+		foreach($this->fieldConf?:[] as $key=>$conf)
+			if (!empty($this->fieldsCache[$key]) && $this->fieldsCache[$key] instanceof CortexCollection
+				&& $this->fieldsCache[$key]->hasChanged())
+				$this->set($key,$this->fieldsCache[$key]->getAll('_id',true));
+	}
+
+	/**
+	 * additional save operations
+	 */
+	protected function _aftersave() {
+		$fields = $this->fieldConf?:[];
 		// m:m save cascade
 		if (!empty($this->saveCsd)) {
 			foreach($this->saveCsd as $key => $val) {
-				if($fields[$key]['relType'] == 'has-many') {
+				if ($fields[$key]['relType'] == 'has-many') {
 					$relConf = $fields[$key]['has-many'];
-					$mmTable = $this->mmTable($relConf,$key);
-					$rel = $this->getRelInstance(null, array('db'=>$this->db, 'table'=>$mmTable));
-					$id = $this->get($relConf['relPK'],true);
-					$filter = [$relConf['relField'].' = ?',$id];
-					if ($relConf['isSelf']) {
-						$filter[0].= ' OR '.$relConf['relField'].'_ref = ?';
-						$filter[] = $id;
+					if ($relConf['hasRel'] == 'has-many') {
+						$mmTable = $this->mmTable($relConf,$key);
+						$mm = $this->getRelInstance(null, ['db'=>$this->db, 'table'=>$mmTable]);
+						$id = $this->get($relConf['localKey'],true);
+						$filter = [$relConf['relField'].' = ?',$id];
+						if ($relConf['isSelf']) {
+							$filter[0].= ' OR '.$relConf['selfRefField'].' = ?';
+							$filter[] = $id;
+						}
+						// delete all refs
+						if (empty($val))
+							$mm->erase($filter);
+						// update refs
+						elseif (is_array($val)) {
+							// TODO: check if we can keep existing entries
+							$mm->erase($filter);
+							$relFieldConf = $this->getRelInstance($relConf[0],$relConf,$key)
+								->getFieldConfiguration();
+							$fkey = $relFieldConf[$relConf[1]]['has-many']['relField'];
+							foreach(array_unique($val) as $v) {
+								if ($relConf['isSelf'] && $v==$id)
+									continue;
+								$mm->set($fkey,$v);
+								$mm->set($relConf['isSelf'] ? $relConf['selfRefField']
+									: $relConf['relField'], $id);
+								$mm->save();
+								$mm->reset();
+							}
+						}
+						unset($mm);
 					}
-					// delete all refs
-					if (is_null($val))
-						$rel->erase($filter);
-					// update refs
-					elseif (is_array($val)) {
-						$rel->erase($filter);
-						foreach($val as $v) {
-							if ($relConf['isSelf'] && $v==$id)
-								continue;
-							$rel->set($key,$v);
-							$rel->set($relConf['relField'].($relConf['isSelf']?'_ref':''),$id);
-							$rel->save();
-							$rel->reset();
+					elseif($relConf['hasRel'] == 'belongs-to-one') {
+						$rel = $this->getRelInstance($relConf[0],$relConf,$key);
+						// find existing relations
+						$refs = $rel->find([$relConf[1].' = ?',$this->getRaw($relConf['relField'])]);
+						if (empty($val)) {
+							foreach ($refs?:[] as $model) {
+								$model->set($relConf[1],NULL);
+								$model->save();
+							}
+							$this->fieldsCache[$key] = NULL;
+						} else {
+							if ($refs) {
+								$ref_ids = $refs->getAll('_id');
+								// unlink removed relations
+								$remove_refs = array_diff($ref_ids,$val);
+								foreach ($refs as $model)
+									if (in_array($model->getRaw($relConf['relField']),$remove_refs)) {
+										$model->set($relConf[1],null);
+										$model->save();
+									}
+								// get new relation keys
+								$val = array_diff($val,$ref_ids);
+							} else
+								$refs = new CortexCollection();
+							if (!empty($val)) {
+								// find models that need to be linked
+								$new_refs = $rel->find([$relConf['relField'].' IN ?',$val]);
+								foreach ($new_refs?:[] as $model) {
+									// set relation to new models
+									$model->set($relConf[1],$this->getRaw($relConf['relField']));
+									$model->save();
+									$refs->add($model);
+								}
+							}
+							$this->fieldsCache[$key] = $refs;
 						}
 					}
-					unset($rel);
 				} elseif($fields[$key]['relType'] == 'has-one') {
 					$val->save();
 				}
 			}
-			$this->saveCsd = array();
+			$this->saveCsd = [];
 		}
-		$this->emit($new?'afterinsert':'afterupdate');
-		return $result;
+	}
+
+	/**
+	 * Save mapped record
+	 * @return mixed
+	 **/
+	function save() {
+		// perform event & save operations
+		return $this->dry() ? $this->insert() : $this->update();
 	}
 
 	/**
 	 * Count records that match criteria
-	 * @param null $filter
+	 * @param array $filter
 	 * @param array $options
 	 * @param int $ttl
 	 * @return mixed
@@ -1219,6 +1396,11 @@ class Cortex extends Cursor {
 	 * @param $key
 	 */
 	public function countRel($key, $alias=null, $filter=null, $option=null) {
+		if (strpos($key,'.')!==FALSE) {
+			list($relM,$relF) = explode('.',$key,2);
+			$this->rel($relM)->countRel($relF,$alias,$filter,$option);
+			return;
+		}
 		if (!$alias)
 			$alias = 'count_'.$key;
 		$filter_bak = null;
@@ -1235,39 +1417,39 @@ class Cortex extends Cursor {
 					if ($this->whitelist && !in_array($alias,$this->whitelist))
 						$this->whitelist[] = $alias;
 				} elseif ($this->dbsType == 'mongo')
-					$this->_mongo_addGroup(array(
-						'keys'=>array($key=>1),
+					$this->_mongo_addGroup([
+						'keys'=>[$key=>1],
 						'reduce' => 'prev.'.$alias.'++;',
-						"initial" => array($alias => 0)
-					));
+						"initial" => [$alias => 0]
+					]);
 				else
 					trigger_error('Cannot add direct relational counter.',E_USER_ERROR);
 			} elseif($this->fieldConf[$key]['relType'] == 'has-many') {
 				$relConf=$this->fieldConf[$key]['has-many'];
-			 	if ($relConf['hasRel']=='has-many') {
+				if ($relConf['hasRel']=='has-many') {
 					// many-to-many
 					if ($this->dbsType == 'sql') {
 						$mmTable = $this->mmTable($relConf,$key);
-						$filter = array($mmTable.'.'.$relConf['relField']
-							.' = '.$this->table.'.'.$this->primary);
-						$from=$mmTable;
+						$filter = [$mmTable.'.'.$relConf['relField']
+							.' = '.$this->table.'.'.$this->primary];
+						$from = $this->db->quotekey($mmTable);
 						if (array_key_exists($key, $this->relFilter) &&
 							!empty($this->relFilter[$key][0])) {
-							$options=array();
-							$from = $mmTable.' '.$this->_sql_left_join($key,$mmTable,
-									$relConf['relPK'],$relConf['relTable']);
+							$options=[];
+							$from = $this->db->quotekey($mmTable).' '.
+								$this->_sql_left_join($key,$mmTable,$relConf['relPK'],$relConf['relTable']);
 							$relFilter = $this->relFilter[$key];
 							$this->_sql_mergeRelCondition($relFilter,$relConf['relTable'],
 								$filter,$options);
 						}
 						$filter = $this->queryParser->prepareFilter($filter,
-							$this->dbsType, $this->db, $this->fieldConf);
+							$this->dbsType, $this->db, $this->fieldConf, $this->primary);
 						$crit = array_shift($filter);
 						if (count($filter)>0)
 							$this->preBinds=array_merge($this->preBinds,$filter);
 						$this->mapper->set($alias,
-							'(select count('.$this->db->quotekey($mmTable.'.'.$relConf['relField']).') from '.
-							$this->db->quotekey($from).' where '.$crit.
+							'(select count('.$this->db->quotekey($mmTable.'.'.$relConf['relField']).')'.
+							' from '.$from.' where '.$crit.
 							' group by '.$this->db->quotekey($mmTable.'.'.$relConf['relField']).')');
 						if ($this->whitelist && !in_array($alias,$this->whitelist))
 							$this->whitelist[] = $alias;
@@ -1283,10 +1465,10 @@ class Cortex extends Cursor {
 						$fAlias=$fTable.'__count';
 						$rKey=$relConf[1];
 						$crit = $fAlias.'.'.$rKey.' = '.$this->table.'.'.$relConf['relField'];
-						$filter = $this->mergeWithRelFilter($key,array($crit));
+						$filter = $this->mergeWithRelFilter($key,[$crit]);
 						$filter[0] = $this->queryParser->sql_prependTableToFields($filter[0],$fAlias);
 						$filter = $this->queryParser->prepareFilter($filter,
-							$this->dbsType, $this->db, $this->fieldConf);
+							$this->dbsType, $this->db, $this->fieldConf, $this->primary);
 						$crit = array_shift($filter);
 						if (count($filter)>0)
 							$this->preBinds=array_merge($this->preBinds,$filter);
@@ -1317,7 +1499,7 @@ class Cortex extends Cursor {
 	 */
 	protected function _mongo_addGroup($opt) {
 		if (!$this->grp_stack)
-			$this->grp_stack = array('keys'=>array(),'initial'=>array(),'reduce'=>'','finalize'=>'');
+			$this->grp_stack = ['keys'=>[],'initial'=>[],'reduce'=>'','finalize'=>''];
 		if (isset($opt['keys']))
 			$this->grp_stack['keys']+=$opt['keys'];
 		if (isset($opt['reduce']))
@@ -1331,19 +1513,21 @@ class Cortex extends Cursor {
 	/**
 	 * update a given date or time field with the current time
 	 * @param string $key
+	 * @param null $timestamp
 	 */
-	public function touch($key) {
+	public function touch($key, $timestamp=NULL) {
 		if (isset($this->fieldConf[$key])
 			&& isset($this->fieldConf[$key]['type'])) {
 			$type = $this->fieldConf[$key]['type'];
 			$date = ($this->dbsType=='sql' && preg_match('/mssql|sybase|dblib|odbc|sqlsrv/',
-				$this->db->driver())) ? 'Ymd' : 'Y-m-d';
+					$this->db->driver())) ? 'Ymd' : 'Y-m-d';
+			$timestamp = $timestamp ?: time();
 			if ($type == Schema::DT_DATETIME || $type == Schema::DT_TIMESTAMP)
-				$this->set($key,date($date.' H:i:s'));
+				$this->set($key,date($date.' H:i:s', $timestamp));
 			elseif ($type == Schema::DT_DATE)
-				$this->set($key,date($date));
+				$this->set($key,date($date, $timestamp));
 			elseif ($type == Schema::DT_INT4)
-				$this->set($key,time());
+				$this->set($key,$timestamp);
 		}
 	}
 
@@ -1363,10 +1547,12 @@ class Cortex extends Cursor {
 			// handle relations
 			if (isset($fields[$key]['belongs-to-one'])) {
 				// one-to-many, one-to-one
-				if (is_null($val))
+				if (empty($val))
 					$val = NULL;
 				elseif (is_object($val) &&
-					!($this->dbsType=='mongo' && $val instanceof \MongoId)) {
+					!($this->dbsType=='mongo' && (
+						($this->db->legacy() && $val instanceof \MongoId) ||
+						(!$this->db->legacy() && $val instanceof \MongoDB\BSON\ObjectId)))) {
 					// fetch fkey from mapper
 					if (!$val instanceof Cortex || $val->dry())
 						trigger_error(self::E_INVALID_RELATION_OBJECT,E_USER_ERROR);
@@ -1375,17 +1561,18 @@ class Cortex extends Cursor {
 						$rel_field = (is_array($relConf) ? $relConf[1] : '_id');
 						$val = $val->get($rel_field,true);
 					}
-				} elseif ($this->dbsType == 'mongo' && !$val instanceof \MongoId)
-					$val = new \MongoId($val);
+				} elseif ($this->dbsType == 'mongo' && (($this->db->legacy() && !$val instanceof \MongoId)
+						|| (!$this->db->legacy() && !$val instanceof \MongoDB\BSON\ObjectId)))
+					$val = $this->db->legacy() ? new \MongoId($val) : new \MongoDB\BSON\ObjectId($val);
 			} elseif (isset($fields[$key]['has-one'])){
 				$relConf = $fields[$key]['has-one'];
-				if (is_null($val)) {
+				if (empty($val)) {
 					$val = $this->get($key);
 					$val->set($relConf[1],NULL);
 				} else {
 					if (!$val instanceof Cortex) {
 						$rel = $this->getRelInstance($relConf[0],null,$key);
-						$rel->load(array('_id = ?', $val));
+						$rel->load(['_id = ?', $val]);
 						$val = $rel;
 					}
 					$val->set($relConf[1], $this->_id);
@@ -1400,45 +1587,60 @@ class Cortex extends Cursor {
 				$val = $this->getForeignKeysArray($val, $rel_field, $key);
 			}
 			elseif (isset($fields[$key]['has-many'])) {
-				// many-to-many, bidirectional
 				$relConf = $fields[$key]['has-many'];
-				if ($relConf['hasRel'] == 'has-many') {
+				// many-to-many, bidirectional
+				// many-to-one, inverse
+				if ($relConf['hasRel'] == 'has-many'
+					|| $relConf['hasRel'] == 'belongs-to-one') {
 					// custom setter
 					$val = $this->emit('set_'.$key, $val);
 					$val = $this->getForeignKeysArray($val,'_id',$key);
+					if (empty($val) && is_array($val))
+						$val=new CortexCollection();
 					$this->saveCsd[$key] = $val; // array of keys
 					$this->fieldsCache[$key] = $val;
 					return $val;
-				} elseif ($relConf['hasRel'] == 'belongs-to-one') {
-					// TODO: many-to-one, bidirectional, inverse way
-					trigger_error("not implemented",E_USER_ERROR);
 				}
 			}
-			// convert array content
-			if (is_array($val) && $this->dbsType == 'sql')
-				if ($fields[$key]['type'] == self::DT_SERIALIZED)
-					$val = serialize($val);
-				elseif ($fields[$key]['type'] == self::DT_JSON)
-					$val = json_encode($val);
-				else
-					trigger_error(sprintf(self::E_ARRAY_DATATYPE, $key),E_USER_ERROR);
 			// add nullable polyfill
 			if ($val === NULL && ($this->dbsType == 'jig' || $this->dbsType == 'mongo')
 				&& array_key_exists('nullable', $fields[$key]) && $fields[$key]['nullable'] === false)
 				trigger_error(sprintf(self::E_NULLABLE_COLLISION,$key),E_USER_ERROR);
 			// MongoId shorthand
-			if ($this->dbsType == 'mongo' && !$val instanceof \MongoId) {
+			if ($this->dbsType == 'mongo' && (($this->db->legacy() && !$val instanceof \MongoId)
+					|| (!$this->db->legacy() && !$val instanceof \MongoDB\BSON\ObjectId))) {
 				if ($key == '_id')
-					$val = new \MongoId($val);
+					$val = $this->db->legacy() ? new \MongoId($val) : new \MongoDB\BSON\ObjectId($val);
 				elseif (preg_match('/INT/i',$fields[$key]['type'])
 					&& !isset($fields[$key]['relType']))
 					$val = (int) $val;
 			}
-			if (preg_match('/BOOL/i',$fields[$key]['type'])) {
+			// cast boolean
+			if (preg_match('/BOOL/i',$fields[$key]['type']) && !($val===NULL
+					&& isset($fields[$key]['nullable']) && $fields[$key]['nullable']==TRUE)) {
 				$val = !$val || $val==='false' ? false : (bool) $val;
 				if ($this->dbsType == 'sql')
 					$val = (int) $val;
 			}
+			// custom setter
+			$val = $this->emit('set_'.$key, $val);
+			// clean datetime
+			if (isset($fields[$key]['type']) && empty($val) &&
+				in_array($fields[$key]['type'], [Schema::DT_DATE,Schema::DT_DATETIME])
+			)
+				$val=NULL;
+			// convert array content
+			if (is_array($val) && $this->dbsType == 'sql') {
+				if ($fields[$key]['type']==self::DT_SERIALIZED)
+					$val=serialize($val);
+				elseif ($fields[$key]['type']==self::DT_JSON)
+					$val=json_encode($val);
+				else
+					trigger_error(sprintf(self::E_ARRAY_DATATYPE,$key),E_USER_ERROR);
+			}
+		} else {
+			// custom setter
+			$val = $this->emit('set_'.$key, $val);
 		}
 		// fluid SQL
 		if ($this->fluid && $this->dbsType == 'sql') {
@@ -1464,12 +1666,10 @@ class Cortex extends Cursor {
 				$newField = $table->getCols(true);
 				$newField = $newField[$key];
 				$fields = $this->mapper->schema();
-				$fields[$key] = $newField + array('value'=>NULL,'initial'=>NULL,'changed'=>NULL);
+				$fields[$key] = $newField + ['value'=>NULL,'initial'=>NULL,'changed'=>NULL];
 				$this->mapper->schema($fields);
 			}
 		}
-		// custom setter
-		$val = $this->emit('set_'.$key, $val);
 		return $this->mapper->set($key, $val);
 	}
 
@@ -1484,13 +1684,13 @@ class Cortex extends Cursor {
 			if (preg_match('/^[sg]et_/',$event)) {
 				$val = (is_string($f=$this->trigger[$event])
 					&& preg_match('/^[sg]et_/',$f))
-					? call_user_func(array($this,$event),$val)
-					: \Base::instance()->call($f,array($this,$val));
+					? call_user_func([$this,$event],$val)
+					: \Base::instance()->call($f,[$this,$val]);
 			} else
-				$val = \Base::instance()->call($this->trigger[$event],array($this,$val));
+				$val = \Base::instance()->call($this->trigger[$event],[$this,$val]);
 		} elseif (preg_match('/^[sg]et_/',$event) && method_exists($this,$event)) {
 			$this->trigger[] = $event;
-			$val = call_user_func(array($this,$event),$val);
+			$val = call_user_func([$this,$event],$val);
 		}
 		return $val;
 	}
@@ -1527,6 +1727,17 @@ class Cortex extends Cursor {
 	}
 
 	/**
+	 * reset virtual fields
+	 * @param string $key
+	 */
+	public function clearVirtual($key=NULL) {
+		if ($key)
+			unset($this->vFields[$key]);
+		else
+			$this->vFields=[];
+	}
+
+	/**
 	 * Retrieve contents of key
 	 * @return mixed
 	 * @param string $key
@@ -1549,6 +1760,8 @@ class Cortex extends Cursor {
 		}
 		if ($raw) {
 			$out = $this->exists($key) ? $this->mapper->{$key} : NULL;
+			if ($this->dbsType == 'mongo' && !$this->db->legacy() && $out instanceof \MongoDB\Model\BSONArray)
+				$out = (array) $out;
 			return $out;
 		}
 		if (!empty($fields) && isset($fields[$key]) && is_array($fields[$key])
@@ -1570,7 +1783,7 @@ class Cortex extends Cursor {
 							// build the cache, find all values of current key
 							$relKeys = array_unique($cx->getAll($key,true));
 							// find related models
-							$crit = array($relConf[1].' IN ?', $relKeys);
+							$crit = [$relConf[1].' IN ?', $relKeys];
 							$relSet = $rel->find($this->mergeWithRelFilter($key, $crit),
 								$this->getRelFilterOption($key),$this->_ttl);
 							// cache relSet, sorted by ID
@@ -1580,7 +1793,7 @@ class Cortex extends Cursor {
 						$result = $cx->getSubset($key,(string) $this->get($key,true));
 						$this->fieldsCache[$key] = $result ? $result[0] : NULL;
 					} else {
-						$crit = array($relConf[1].' = ?', $this->get($key, true));
+						$crit = [$relConf[1].' = ?', $this->get($key, true)];
 						$crit = $this->mergeWithRelFilter($key, $crit);
 						$this->fieldsCache[$key] = $rel->findone($crit,
 							$this->getRelFilterOption($key),$this->_ttl);
@@ -1600,32 +1813,34 @@ class Cortex extends Cursor {
 				// one-to-*, bidirectional, inverse way
 				if ($relType == 'belongs-to-one') {
 					$toConf = $relFieldConf[$fromConf[1]]['belongs-to-one'];
-					if(!is_array($toConf))
-						$toConf = array($toConf, $id);
+					if (!is_array($toConf))
+						$toConf = [$toConf, $id];
 					if ($toConf[1] != $id && (!$this->exists($toConf[1])
 							|| is_null($this->mapper->get($toConf[1]))))
 						$this->fieldsCache[$key] = null;
-					elseif($cx = $this->getCollection()) {
+					elseif ($cx=$this->getCollection()) {
 						// part of a result set
-						if(!$cx->hasRelSet($key)) {
+						if (!$cx->hasRelSet($key)) {
 							// emit eager loading
 							$relKeys = $cx->getAll($toConf[1],true);
-							$crit = array($fromConf[1].' IN ?', $relKeys);
+							$crit = [$fromConf[1].' IN ?', $relKeys];
 							$relSet = $rel->find($this->mergeWithRelFilter($key,$crit),
 								$this->getRelFilterOption($key),$this->_ttl);
 							$cx->setRelSet($key, $relSet ? $relSet->getBy($fromConf[1],true) : NULL);
 						}
-						$result = $cx->getSubset($key, array($this->get($toConf[1])));
+						$result = $cx->getSubset($key, [$this->get($toConf[1])]);
 						$this->fieldsCache[$key] = $result ? (($type == 'has-one')
 							? $result[0][0] : CortexCollection::factory($result[0])) : NULL;
-					} else {
-						$crit = array($fromConf[1].' = ?', $this->get($toConf[1],true));
-						$crit = $this->mergeWithRelFilter($key, $crit);
-						$opt = $this->getRelFilterOption($key);
-						$this->fieldsCache[$key] = (($type == 'has-one')
-							? $rel->findone($crit,$opt,$this->_ttl)
-							: $rel->find($crit,$opt,$this->_ttl)) ?: NULL;
-					}
+					}	// no collection
+					elseif (($val=$this->getRaw($toConf[1])) && $val!==NULL) {
+						$crit=[$fromConf[1].' = ?',$val];
+						$crit=$this->mergeWithRelFilter($key,$crit);
+						$opt=$this->getRelFilterOption($key);
+						$this->fieldsCache[$key]=(($type=='has-one')
+							?$rel->findone($crit,$opt,$this->_ttl)
+							:$rel->find($crit,$opt,$this->_ttl))?:NULL;
+					} else
+						$this->fieldsCache[$key] = NULL;
 				}
 				// many-to-many, bidirectional
 				elseif ($relType == 'has-many') {
@@ -1637,7 +1852,7 @@ class Cortex extends Cursor {
 						return $this->fieldsCache[$key];
 					}
 					$id = $toConf['relPK'];
-					$rel = $this->getRelInstance(null,array('db'=>$this->db,'table'=>$mmTable));
+					$rel = $this->getRelInstance(null,['db'=>$this->db,'table'=>$mmTable]);
 					if ($cx = $this->getCollection()) {
 						if (!$cx->hasRelSet($key)) {
 							// get IDs of all results
@@ -1645,19 +1860,19 @@ class Cortex extends Cursor {
 							// get all pivot IDs
 							$filter = [$fromConf['relField'].' IN ?',$relKeys];
 							if ($fromConf['isSelf']) {
-								$filter[0].= ' OR '.$fromConf['relField'].'_ref IN ?';
+								$filter[0].= ' OR '.$fromConf['selfRefField'].' IN ?';
 								$filter[] = $relKeys;
 							}
 							$mmRes = $rel->find($filter,null,$this->_ttl);
 							if (!$mmRes)
 								$cx->setRelSet($key, NULL);
 							else {
-								$pivotRel = array();
-								$pivotKeys = array();
+								$pivotRel = [];
+								$pivotKeys = [];
 								foreach($mmRes as $model) {
-									$val = $model->get($key,true);
+									$val = $model->get($toConf['relField'],true);
 									if ($fromConf['isSelf']) {
-										$refVal = $model->get($fromConf['relField'].'_ref',true);
+										$refVal = $model->get($fromConf['selfRefField'],true);
 										$pivotRel[(string) $refVal][] = $val;
 										$pivotRel[(string) $val][] = $refVal;
 										$pivotKeys[] = $val;
@@ -1672,7 +1887,7 @@ class Cortex extends Cursor {
 								// preload all rels
 								$pivotKeys = array_unique($pivotKeys);
 								$fRel = $this->getRelInstance($fromConf[0],null,$key,true);
-								$crit = array($id.' IN ?', $pivotKeys);
+								$crit = [$id.' IN ?', $pivotKeys];
 								$relSet = $fRel->find($this->mergeWithRelFilter($key, $crit),
 									$this->getRelFilterOption($key),$this->_ttl);
 								$cx->setRelSet($key, $relSet ? $relSet->getBy($id) : NULL);
@@ -1680,37 +1895,41 @@ class Cortex extends Cursor {
 							}
 						}
 						// fetch subset from preloaded rels using cached pivot keys
-						$fkeys = $cx->getSubset($key.'_pivot', array($this->get($id)));
+						$fkeys = $cx->getSubset($key.'_pivot', [$this->get($id)]);
 						$this->fieldsCache[$key] = $fkeys ?
 							CortexCollection::factory($cx->getSubset($key, $fkeys[0])) : NULL;
 					} // no collection
 					else {
 						// find foreign keys
-						$fId=$this->get($fromConf['relPK'],true);
+						$fId=$this->get($fromConf['localKey'],true);
 						$filter = [$fromConf['relField'].' = ?',$fId];
 						if ($fromConf['isSelf']) {
 							$filter = [$fromConf['relField'].' = ?',$fId];
-							$filter[0].= ' OR '.$fromConf['relField'].'_ref = ?';
+							$filter[0].= ' OR '.$fromConf['selfRefField'].' = ?';
 							$filter[] = $filter[1];
 						}
 						$results = $rel->find($filter,null,$this->_ttl);
 						if (!$results)
 							$this->fieldsCache[$key] = NULL;
 						else {
-							$fkeys = $results->getAll($key,true);
-							if ($fromConf['isSelf']) {
-								// merge both rel sides and remove itself
-								$fkeys = array_diff(array_merge($fkeys,
-									$results->getAll($key.'_ref',true)),[$fId]);
+							$fkeys = $results->getAll($toConf['relField'],true);
+							if (empty($fkeys))
+								trigger_error(sprintf('Got empty foreign keys from "%s"', $rel->getTable().'.'.$toConf['relField']), E_USER_WARNING);
+							else {
+								if ($fromConf['isSelf']) {
+									// merge both rel sides and remove itself
+									$fkeys = array_diff(array_merge($fkeys,
+										$results->getAll($toConf['selfRefField'],true)),[$fId]);
+								}
+								// create foreign table mapper
+								unset($rel);
+								$rel = $this->getRelInstance($fromConf[0],null,$key,true);
+								// load foreign models
+								$filter = [$id.' IN ?', $fkeys];
+								$filter = $this->mergeWithRelFilter($key, $filter);
+								$this->fieldsCache[$key] = $rel->find($filter,
+									$this->getRelFilterOption($key),$this->_ttl);
 							}
-							// create foreign table mapper
-							unset($rel);
-							$rel = $this->getRelInstance($fromConf[0],null,$key,true);
-							// load foreign models
-							$filter = array($toConf['relPK'].' IN ?', $fkeys);
-							$filter = $this->mergeWithRelFilter($key, $filter);
-							$this->fieldsCache[$key] = $rel->find($filter,
-								$this->getRelFilterOption($key),$this->_ttl);
 						}
 					}
 				}
@@ -1718,16 +1937,16 @@ class Cortex extends Cursor {
 			elseif (isset($fields[$key]['belongs-to-many'])) {
 				// many-to-many, unidirectional
 				$fields[$key]['type'] = self::DT_JSON;
-				$result = !$this->exists($key) ? null :$this->mapper->get($key);
+				$result = $this->getRaw($key);
 				if ($this->dbsType == 'sql')
-					$result = json_decode($result, true);
+					$result = json_decode($result?:'', true);
 				if (!is_array($result))
 					$this->fieldsCache[$key] = $result;
 				else {
 					// create foreign table mapper
 					$relConf = $fields[$key]['belongs-to-many'];
 					$rel = $this->getRelFromConf($relConf,$key);
-					$fkeys = array();
+					$fkeys = [];
 					foreach ($result as $el)
 						$fkeys[] = (is_int($el)||ctype_digit($el))?(int)$el:(string)$el;
 					// if part of a result set
@@ -1745,19 +1964,20 @@ class Cortex extends Cursor {
 								$relKeys = call_user_func_array('array_merge', $relKeys);
 							// get related models
 							if (!empty($relKeys)) {
-								$crit = array($relConf[1].' IN ?', array_unique($relKeys));
+								$crit = [$relConf[1].' IN ?', array_unique($relKeys)];
 								$relSet = $rel->find($this->mergeWithRelFilter($key, $crit),
-								$this->getRelFilterOption($key),$this->_ttl);
+									$this->getRelFilterOption($key),$this->_ttl);
 								// cache relSet, sorted by ID
 								$cx->setRelSet($key, $relSet ? $relSet->getBy($relConf[1]) : NULL);
 							} else
 								$cx->setRelSet($key, NULL);
 						}
 						// get a subset of the preloaded set
-						$this->fieldsCache[$key] = CortexCollection::factory($cx->getSubset($key, $fkeys));
+						$subset = $cx->getSubset($key, $fkeys);
+						$this->fieldsCache[$key] = $subset ? CortexCollection::factory($subset) : NULL;
 					} else {
 						// load foreign models
-						$filter = array($relConf[1].' IN ?', $fkeys);
+						$filter = [$relConf[1].' IN ?', $fkeys];
 						$filter = $this->mergeWithRelFilter($key, $filter);
 						$this->fieldsCache[$key] = $rel->find($filter,
 							$this->getRelFilterOption($key),$this->_ttl);
@@ -1770,17 +1990,30 @@ class Cortex extends Cursor {
 					if ($fields[$key]['type'] == self::DT_SERIALIZED)
 						$this->fieldsCache[$key] = unserialize($this->mapper->{$key});
 					elseif ($fields[$key]['type'] == self::DT_JSON)
-						$this->fieldsCache[$key] = json_decode($this->mapper->{$key},true);
+						$this->fieldsCache[$key] = json_decode($this->mapper->{$key}?:'',true);
 				}
 				if ($this->exists($key) && preg_match('/BOOL/i',$fields[$key]['type'])) {
-					$this->fieldsCache[$key] = (bool) $this->mapper->{$key};
+					$field_val = $this->mapper->{$key};
+					if (isset($fields[$key]['nullable']) && $fields[$key]['nullable'] == TRUE
+						&& $field_val===NULL)
+						$this->fieldsCache[$key] = $field_val;
+					else
+						$this->fieldsCache[$key] = (bool) $this->mapper->{$key};
 				}
 			}
 		}
 		// fetch cached value, if existing
+		// TODO: fix array key reference editing, #71
+//		if (array_key_exists($key,$this->fieldsCache))
+//			$val = $this->fieldsCache[$key];
+//		elseif ($this->exists($key)) {
+//			$val =& $this->mapper->{$key};
+//		} else
+//			$val = NULL;
 		$val = array_key_exists($key,$this->fieldsCache) ? $this->fieldsCache[$key]
 			: (($this->exists($key)) ? $this->mapper->{$key} : null);
-		if ($this->dbsType == 'mongo' && $val instanceof \MongoId) {
+		if ($this->dbsType == 'mongo' && (($this->db->legacy() && $val instanceof \MongoId) ||
+				(!$this->db->legacy() && $val instanceof \MongoDB\BSON\ObjectId))) {
 			// conversion to string makes further processing in template, etc. much easier
 			$val = (string) $val;
 		}
@@ -1818,7 +2051,7 @@ class Cortex extends Cursor {
 			trigger_error(sprintf(self::E_MM_REL_VALUE, $key),E_USER_ERROR);
 		// hydrated mapper as collection
 		if (is_object($val)) {
-			$nval = array();
+			$nval = [];
 			while (!$val->dry()) {
 				$nval[] = $val->get($rel_field,true);
 				$val->next();
@@ -1830,13 +2063,14 @@ class Cortex extends Cursor {
 			$isMongo = ($this->dbsType == 'mongo');
 			foreach ($val as &$item) {
 				if (is_object($item) &&
-					!($isMongo && $item instanceof \MongoId)) {
+					!($isMongo && (($this->db->legacy() && $item instanceof \MongoId) ||
+						(!$this->db->legacy() && $item instanceof \MongoDB\BSON\ObjectId)))) {
 					if (!$item instanceof Cortex || $item->dry())
 						trigger_error(self::E_INVALID_RELATION_OBJECT,E_USER_ERROR);
 					else $item = $item->get($rel_field,true);
 				}
 				if ($isMongo && $rel_field == '_id' && is_string($item))
-					$item = new \MongoId($item);
+					$item = $this->db->legacy() ? new \MongoId($item) : new \MongoDB\BSON\ObjectId($item);
 				if (is_numeric($item))
 					$item = (int) $item;
 				unset($item);
@@ -1861,7 +2095,8 @@ class Cortex extends Cursor {
 			'\\'.$relConf['table'].'\\'.$key;
 		if (\Registry::exists($relName)) {
 			$rel = \Registry::get($relName);
-			$rel->reset();
+			// use pre-configured relation object here and dont reset it
+			//$rel->reset();
 		} else {
 			$rel = $model ? new $model : new Cortex($relConf['db'], $relConf['table']);
 			if (!$rel instanceof Cortex)
@@ -1890,16 +2125,16 @@ class Cortex extends Cursor {
 
 	/**
 	 * get relation model from config
-	 * @param $fieldConf
+	 * @param $relConf
 	 * @param $key
 	 * @return Cortex
 	 */
-	protected function getRelFromConf(&$fieldConf, $key) {
-		if (!is_array($fieldConf))
-			$fieldConf = array($fieldConf, '_id');
-		$rel = $this->getRelInstance($fieldConf[0],null,$key,true);
-		if($this->dbsType=='sql' && $fieldConf[1] == '_id')
-			$fieldConf[1] = $rel->primary;
+	protected function getRelFromConf(&$relConf, $key) {
+		if (!is_array($relConf))
+			$relConf = [$relConf, '_id'];
+		$rel = $this->getRelInstance($relConf[0],null,$key,true);
+		if($this->dbsType=='sql' && $relConf[1] == '_id')
+			$relConf[1] = $rel->primary;
 		return $rel;
 	}
 
@@ -1912,7 +2147,7 @@ class Cortex extends Cursor {
 		$rt = $this->fieldConf[$key]['relType'];
 		$rc = $this->fieldConf[$key][$rt];
 		if (!is_array($rc))
-			$rc = array($rc,'_id');
+			$rc = [$rc,'_id'];
 		return $this->getRelInstance($rc[0],null,$key);
 	}
 
@@ -1928,9 +2163,22 @@ class Cortex extends Cursor {
 			foreach(array_keys($this->vFields) as $key)
 				$fields[$key]=$this->get($key);
 		if (is_int($rel_depths))
-			$rel_depths = array('*'=>$rel_depths-1);
+			$rel_depths = ['*'=>$rel_depths-1];
 		elseif (is_array($rel_depths))
 			$rel_depths['*'] = isset($rel_depths['*'])?--$rel_depths['*']:-1;
+		$mask=[];
+		$relMasks=[];
+		if ($rel_depths)
+			// collect field mask for relations
+			foreach($rel_depths as $i=>$val)
+				if (is_int($i)) {
+					if (is_int(strpos($val,'.'))) {
+						list($key, $relMask) = explode('.',$val,2);
+						$relMasks[$key][] = $relMask;
+					} else
+						$mask[] = $val;
+					unset($rel_depths[$i]);
+				}
 		if ($this->fieldConf) {
 			$fields += array_fill_keys(array_keys($this->fieldConf),NULL);
 			if ($this->whitelist)
@@ -1941,7 +2189,14 @@ class Cortex extends Cursor {
 				if (isset($this->fieldConf[$key]) && is_array($this->fieldConf[$key])) {
 					// handle relations
 					$rd = isset($rel_depths[$key]) ? $rel_depths[$key] : $rel_depths['*'];
-					if ((is_array($rd) || $rd >= 0) && $type=preg_grep('/[belongs|has]-(to-)*[one|many]/',
+					// assemble field mask
+					if (isset($relMasks[$key])) {
+						if (!is_array($rd))
+							$rd = $rd=['*'=>$rd-1];
+						$rd = array_merge($rd, $relMasks[$key]);
+					}
+					// fetch relations
+					if ((is_array($rd) || $rd >= 0) && $type=preg_grep('/(belongs|has)-(to-)*(one|many)/',
 							array_keys($this->fieldConf[$key]))) {
 						$relType=current($type);
 						// cast relations
@@ -1958,11 +2213,16 @@ class Cortex extends Cursor {
 							if ($this->fieldConf[$key]['type'] == self::DT_SERIALIZED)
 								$val=unserialize($mp->mapper->{$key});
 							elseif ($this->fieldConf[$key]['type'] == self::DT_JSON)
-								$val=json_decode($mp->mapper->{$key}, true);
+								$val=json_decode($mp->mapper->{$key}?:'', true);
 						}
 						if ($this->exists($key)
 							&& preg_match('/BOOL/i',$this->fieldConf[$key]['type'])) {
-							$val = (bool) $mp->mapper->{$key};
+							$field_val = $mp->mapper->{$key};
+							if (isset($this->fieldConf[$key]['nullable'])
+								&& $this->fieldConf[$key]['nullable']==TRUE && $field_val===NULL)
+								$val = $field_val;
+							else
+								$val = (bool) $field_val;
 						}
 					}
 				}
@@ -1977,6 +2237,10 @@ class Cortex extends Cursor {
 		}
 		// custom getter
 		foreach ($fields as $key => &$val) {
+			if ($mask && !in_array($key,$mask) && !array_key_exists($key,$relMasks)) {
+				unset($fields[$key]);
+				continue;
+			}
 			$val = $this->emit('get_'.$key, $val);
 			unset($val);
 		}
@@ -1995,7 +2259,7 @@ class Cortex extends Cursor {
 		$mapper_arr = $this->get($key);
 		if(!$mapper_arr)
 			return NULL;
-		$out = array();
+		$out = [];
 		foreach ($mapper_arr as $mp)
 			$out[] = $mp->cast(null,$rel_depths);
 		return $out;
@@ -2010,6 +2274,7 @@ class Cortex extends Cursor {
 		if (is_array($mapper)) {
 			$mp = clone($this->mapper);
 			$mp->reset();
+			$mp->query=[$mp];
 			$cx = $this->factory($mp);
 			$cx->copyfrom($mapper);
 		} else {
@@ -2045,9 +2310,9 @@ class Cortex extends Cursor {
 		foreach ($srcfields as $key => $val) {
 			if (isset($this->fieldConf[$key]) && isset($this->fieldConf[$key]['type'])) {
 				if ($this->fieldConf[$key]['type'] == self::DT_JSON && is_string($val))
-					$val = json_decode($val);
+					$val = json_decode($val?:'',true);
 				elseif ($this->fieldConf[$key]['type'] == self::DT_SERIALIZED && is_string($val))
-					$val = unserialize($val);
+					$val = unserialize($val?:'');
 			}
 			$this->set($key, $val);
 		}
@@ -2061,6 +2326,32 @@ class Cortex extends Cursor {
 	 */
 	public function copyto($key, $relDepth=0) {
 		\Base::instance()->set($key, $this->cast(null,$relDepth));
+	}
+
+	/**
+	 * copy to hive key with relations being simple arrays of keys
+	 * @param $key
+	 */
+	function copyto_flat($key) {
+		/** @var \Base $f3 */
+		$f3 = \Base::instance();
+		$this->copyto($key);
+		foreach ($this->fields() as $field) {
+			if (isset($this->fieldConf[$field]) && isset($this->fieldConf[$field]['relType'])
+				&& $this->fieldConf[$field]['relType']=='has-many'
+				&& $f3->devoid($key.'.'.$field)) {
+				$val = $this->get($field);
+				if ($val instanceof CortexCollection) {
+					$relKey = isset($this->fieldConf[$field]['has-many']['relPK']) ?
+						$this->fieldConf[$field]['has-many']['relPK'] : '_id';
+					$f3->set($key.'.'.$field,$val->getAll($relKey));
+				}
+				elseif (is_array($val))
+					$f3->set($key.'.'.$field,$val);
+				else
+					$f3->clear($key.'.'.$field);
+			}
+		}
 	}
 
 	public function skip($ofs = 1) {
@@ -2086,16 +2377,20 @@ class Cortex extends Cursor {
 	/**
 	 * reset and re-initialize the mapper
 	 * @param bool $mapper
+	 * @param bool $essentials
 	 * @return NULL|void
 	 */
-	public function reset($mapper = true) {
+	public function reset($mapper = true, $essentials=true) {
 		if ($mapper)
 			$this->mapper->reset();
-		$this->fieldsCache=array();
-		$this->saveCsd=array();
-		$this->countFields=array();
-		$this->preBinds=array();
-		$this->grp_stack=null;
+		$this->fieldsCache=[];
+		$this->saveCsd=[];
+		if ($essentials) {
+			// used to store filter conditions and parameters
+			$this->countFields=[];
+			$this->preBinds=[];
+			$this->grp_stack=null;
+		}
 		// set default values
 		if (($this->dbsType == 'jig' || $this->dbsType == 'mongo')
 			&& !empty($this->fieldConf))
@@ -2105,6 +2400,46 @@ class Cortex extends Cursor {
 						? date('Y-m-d H:i:s') : $field_conf['default'];
 					$this->set($field_key, $val);
 				}
+	}
+
+	/**
+	 * reset only specific fields and return to their default values
+	 * @param array $fields
+	 */
+	public function resetFields(array $fields) {
+		$defaults = $this->defaults();
+		foreach ($fields as $field) {
+			unset($this->fieldsCache[$field]);
+			unset($this->saveCsd[$field]);
+			if (isset($defaults[$field]))
+				$this->set($field,$defaults[$field]);
+			else {
+				$this->set($field,NULL);
+			}
+		}
+	}
+
+	/**
+	 * return default values from schema configuration
+	 * @param bool $set set default values to mapper
+	 * @return array
+	 */
+	function defaults($set=false) {
+		$out = [];
+		$fields = $this->fieldConf;
+		if ($this->dbsType == 'sql')
+			$fields = array_replace_recursive($this->mapper->schema(),$fields);
+		foreach($fields as $field_key => $field_conf)
+			if (array_key_exists('default',$field_conf)) {
+				$val = ($field_conf['default'] === \DB\SQL\Schema::DF_CURRENT_TIMESTAMP)
+					? date('Y-m-d H:i:s') : $field_conf['default'];
+				if ($val!==NULL) {
+					$out[$field_key]=$val;
+					if ($set)
+						$this->set($field_key, $val);
+				}
+			}
+		return $out;
 	}
 
 	/**
@@ -2126,10 +2461,132 @@ class Cortex extends Cursor {
 	 * @return mixed
 	 */
 	public function changed($key=null) {
+		if ($key=='_id')
+			$key = $this->primary;
 		if (method_exists($this->mapper,'changed'))
 			return $this->mapper->changed($key);
 		else
 			trigger_error('method does not exist on mapper',E_USER_ERROR);
+	}
+
+	/**
+	 * return initial field value if field was cleared, otherwise FALSE
+	 * @param $key
+	 * @return bool|mixed
+	 */
+	function cleared($key) {
+		$fields = $this->mapper->schema();
+		if (!empty($fields[$key]['initial']) && empty($fields[$key]['value']))
+			return $this->initial($key);
+		return false;
+	}
+
+	/**
+	 * return initial field value
+	 * @param $key
+	 * @return mixed
+	 */
+	function initial($key) {
+		$fields = $this->mapper->schema();
+		if (!empty($fields[$key]['initial'])) {
+			if ($this->fieldConf[$key]['type'] == self::DT_JSON)
+				return json_decode($fields[$key]['initial'], true);
+			elseif ($this->fieldConf[$key]['type'] == self::DT_SERIALIZED)
+				return unserialize($fields[$key]['initial']);
+		}
+		return $fields[$key]['initial'];
+	}
+
+	/**
+	 * compare new data as an assoc array of [field => value] against the initial field values
+	 * callback functions for $new and $old values can be used to prepare new / cleanup old data
+	 * updated fields are set, $new callback must return a value
+	 * it's also possible to target children fields, i.e. [fieldA.fieldB[2].foo => value]
+	 * @param array $fields
+	 * @param callback $new
+	 * @param callback $old
+	 */
+	function compare($fields, $new, $old=NULL) {
+		/** @var \Base $f3 */
+		$f3 = \Base::instance();
+		foreach ($fields as $field=>$data) {
+			$partial=false;
+			$rootKey=false;
+			$parts = preg_split('/(\[.*?\]\.|\.)/', $field, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+			if (count($parts) > 1) {
+				$rootKey=array_shift($parts);
+				$partial=ltrim(implode($parts),'.');
+			}
+			if (!empty($data)) {
+				if ($partial) {
+					$init = $this->initial($rootKey);
+					$init = $f3->ref($partial,false,$init);
+				} else {
+					$init = $this->initial($field);
+				}
+				if (is_array($data)) {
+					// cleanup old values
+					if ($init && $old) {
+						$old_values = array_diff($init,$data);
+						if ($old_values)
+							foreach ($old_values as $val)
+								call_user_func($old,$val);
+					}
+					if ($new)
+						// handle new values
+						foreach ($data as &$val) {
+							$val = call_user_func($new,$val);
+							unset($val);
+						}
+				}
+				else {
+					// changed
+					if ($init !== $data && $old && $init)
+						call_user_func($old,$init);
+					if ($init !== $data && $new)
+						$data = call_user_func($new,$data);
+				}
+			} elseif ($old) {
+				if ($partial) {
+					$old_values = $this->initial($rootKey);
+					// cleanup old in array context
+					if (($pos=strpos($partial,'['))!==FALSE) {
+						$node = substr($partial,0,strpos($partial,'['));
+						$field_value = $pos === 0 ? $old_values : $f3->ref($node,false,$old_values);
+						$old_values = [];
+						if ($field_value) {
+							$fkey = $parts[count($parts)-1];
+							foreach ($field_value as $v)
+								if (!empty($v[$fkey]))
+									$old_values[] = $v[$fkey];
+ 						}
+					} else {
+						$field_value = $f3->ref($partial,false,$old_values);
+						$old_values = !empty($field_value) ? $field_value : null;
+					}
+				} else {
+					$old_values = $this->cleared($field);
+				}
+				if ($old_values) {
+					// cleanup all
+					if (!is_array($old_values))
+						$old_values=[$old_values];
+					foreach ($old_values as $val)
+						call_user_func($old,$val);
+				}
+			}
+			if ($data) {
+				if ($partial) {
+					$rootFieldData = $this->get($rootKey);
+					$fieldData = &$f3->ref($partial,true,$rootFieldData);
+					$fieldData = $data;
+					$this->set($rootKey, $rootFieldData);
+					unset($fieldData);
+				} else {
+					$this->set($field, $data);
+				}
+			}
+		}
 	}
 
 	/**
@@ -2144,21 +2601,39 @@ class Cortex extends Cursor {
 		$this->mapper->clear($key);
 	}
 
+	/**
+	 * perform event & insert operations
+	 * @return mixed
+	 */
 	function insert() {
+		$this->_beforesave();
+		if ($this->emit('beforeinsert')===false)
+			return false;
 		$res = $this->mapper->insert();
 		if (is_array($res))
 			$res = $this->mapper;
 		if (is_object($res))
 			$res = $this->factory($res);
+		$this->_aftersave();
+		$this->emit('afterinsert');
 		return is_int($res) ? $this : $res;
 	}
 
+	/**
+	 * perform event & update operations
+	 * @return mixed
+	 */
 	function update() {
+		$this->_beforesave();
+		if ($this->emit('beforeupdate')===false)
+			return false;
 		$res = $this->mapper->update();
 		if (is_array($res))
 			$res = $this->mapper;
 		if (is_object($res))
 			$res = $this->factory($res);
+		$this->_aftersave();
+		$this->emit('afterupdate');
 		return is_int($res) ? $this : $res;
 	}
 
@@ -2172,7 +2647,7 @@ class Cortex extends Cursor {
 
 	function getiterator() {
 //		return new \ArrayIterator($this->cast(null,false));
-		return new \ArrayIterator(array());
+		return new \ArrayIterator([]);
 	}
 }
 
@@ -2186,7 +2661,7 @@ class CortexQueryParser extends \Prefab {
 		E_MISSINGBINDKEY = 'Named bind parameter `%s` does not exist in filter arguments';
 
 	protected
-		$queryCache = array();
+		$queryCache = [];
 
 	/**
 	 * converts the given filter array to fit the used DBS
@@ -2202,12 +2677,13 @@ class CortexQueryParser extends \Prefab {
 	 * @param string $engine
 	 * @param object $db
 	 * @param null $fieldConf
+	 * @param string $primary
 	 * @return array|bool|null
 	 */
-	public function prepareFilter($cond, $engine, $db, $fieldConf=null) {
+	public function prepareFilter($cond, $engine, $db, $fieldConf=null, $primary='id') {
 		if (is_null($cond)) return $cond;
 		if (is_string($cond))
-			$cond = array($cond);
+			$cond = [$cond];
 		$f3 = \Base::instance();
 		$cacheHash = $f3->hash($f3->stringify($cond)).'.'.$engine;
 		if ($engine=='sql')
@@ -2227,7 +2703,13 @@ class CortexQueryParser extends \Prefab {
 		}
 		$where = array_shift($cond);
 		$args = $cond;
-		$where = str_replace(array('&&', '||'), array('AND', 'OR'), $where);
+		$unify=[['&&'],['AND']];
+		// TODO: OR support via || operator is deprecated
+		if ($engine == 'jig' || ($engine=='sql' && $db->driver() == 'mysql')) {
+			$unify[0][]='||';
+			$unify[1][]='OR';
+		}
+		$where = str_replace($unify[0], $unify[1], $where);
 		// prepare IN condition
 		$where = preg_replace('/\bIN\b\s*\(\s*(\?|:\w+)?\s*\)/i', 'IN $1', $where);
 		switch ($engine) {
@@ -2239,7 +2721,7 @@ class CortexQueryParser extends \Prefab {
 				if (is_int(strpos($where, ':')))
 					list($parts, $args) = $this->convertNamedParams($parts, $args);
 				foreach ($parts as &$part) {
-					$part = $this->_mongo_parse_relational_op($part, $args, $fieldConf);
+					$part = $this->_mongo_parse_relational_op($part, $args, $db, $fieldConf);
 					unset($part);
 				}
 				$ncond = $this->_mongo_parse_logical_op($parts);
@@ -2248,18 +2730,23 @@ class CortexQueryParser extends \Prefab {
 				if (!$f3->exists('CORTEX.quoteConditions',$qc) || $qc)
 					$where = $this->sql_quoteCondition($where,$db);
 				// preserve identifier
-				$where = preg_replace('/(?!\B)_id/', 'id', $where);
+				$where = preg_replace('/(?!\B)_id/', $primary, $where);
 				if ($db->driver() == 'pgsql')
 					$where = preg_replace('/\s+like\s+/i', ' ILIKE ', $where);
 				$parts = $this->splitLogical($where);
 				// ensure positional bind params
 				if (is_int(strpos($where, ':')))
 					list($parts, $args) = $this->convertNamedParams($parts, $args);
-				$ncond = array();
+				$ncond = [];
 				foreach ($parts as &$part) {
-					// enhanced IN handling
-					if (is_int(strpos($part, '?'))) {
+					// arg handling
+					$argCount = substr_count($part, '?');
+					if ($argCount > 1) {
+						// function parameters like `foo(?,?,?)`
+						$ncond = array_merge($ncond, array_splice($args, 0, $argCount));
+					} elseif ($argCount === 1) {
 						$val = array_shift($args);
+						// enhanced IN operator args expansion
 						if (is_int($pos = strpos($part, ' IN ?'))) {
 							if ($val instanceof CortexCollection)
 								$val = $val->getAll('_id',TRUE);
@@ -2268,7 +2755,9 @@ class CortexQueryParser extends \Prefab {
 							$bindMarks = str_repeat('?,',count($val) - 1).'?';
 							$part = substr($part, 0, $pos).' IN ('.$bindMarks.') ';
 							$ncond = array_merge($ncond, $val);
-						} elseif($val === null &&
+						}
+						// comparison against NULL
+						elseif($val === null &&
 							preg_match('/((?:\S[\w\-]+\S.?)+)\s*'.
 								'(!?==?)\s*(?:\?|:\w+)/i',$part,$match)) {
 							$part = ' '.$match[1].' IS '.($match[2][0]=='!'?'NOT ':'').'NULL ';
@@ -2308,8 +2797,8 @@ class CortexQueryParser extends \Prefab {
 	 * @return array
 	 */
 	protected function convertNamedParams($parts, $args) {
-		if (empty($args)) return array($parts, $args);
-		$params = array();
+		if (empty($args)) return [$parts, $args];
+		$params = [];
 		$pos = 0;
 		foreach ($parts as &$part) {
 			if (preg_match('/:\w+/i', $part, $match)) {
@@ -2322,7 +2811,7 @@ class CortexQueryParser extends \Prefab {
 				$params[] = $args[$pos++];
 			unset($part);
 		}
-		return array($parts, $params);
+		return [$parts, $params];
 	}
 
 	/**
@@ -2335,18 +2824,19 @@ class CortexQueryParser extends \Prefab {
 		// https://www.debuggex.com/r/6AXwJ1Y3Aac8aocQ/3
 		// https://regex101.com/r/yM5vK4/1
 		// this took me lots of sleepless nights
-		return preg_replace_callback('/'.
-			'(\w+\((?:[^)(]+|(?R))*\))|'. // exclude SQL function names "foo("
+		$out = preg_replace_callback('/'.
+			'\w+\((?:(?>[^()]+)|\((?:(?>[^()]+)|^(?R))*\))*\)|'. // exclude SQL function names "foo("
 			'(?:(\b(?<!:)'. // exclude bind parameter ":foo"
 				'[a-zA-Z_](?:[\w\-_.]+\.?))'. // match only identifier, exclude values
 			'(?=[\s<>=!)]|$))/i', // only when part of condition or within brackets
 			function($match) use($db) {
-				if (!isset($match[2]))
+				if (!isset($match[1]))
+					return $match[0];
+				if (preg_match('/\b(AND|OR|IN|LIKE|NOT|HAVING|BETWEEN|SELECT|FROM|WHERE)\b/i',$match[1]))
 					return $match[1];
-				if (preg_match('/\b(AND|OR|IN|LIKE|NOT)\b/i',$match[2]))
-					return $match[2];
-				return $db->quotekey($match[2]);
+				return $db->quotekey($match[1]);
 			}, $cond);
+		return $out ?: $cond;
 	}
 
 	/**
@@ -2356,18 +2846,19 @@ class CortexQueryParser extends \Prefab {
 	 * @return string
 	 */
 	public function sql_prependTableToFields($cond, $table) {
-		return preg_replace_callback('/'.
-			'(\w+\((?:[^)(]+|(?R))*\))|'.
+		$out = preg_replace_callback('/'.
+			'(\w+\((?:[^)(]+|\((?:[^)(]+|(?R))*\))*\))|'.
 			'(?:(\s)|^|(?<=[(]))'.
 			'([a-zA-Z_](?:[\w\-_]+))'.
 			'(?=[\s<>=!)]|$)/i',
 			function($match) use($table) {
 				if (!isset($match[3]))
 					return $match[1];
-				if (preg_match('/\b(AND|OR|IN|LIKE|NOT)\b/i',$match[3]))
+				if (preg_match('/\b(AND|OR|IN|LIKE|NOT|HAVING|SELECT|FROM|WHERE)\b/i',$match[3]))
 					return $match[0];
 				return $match[2].$table.'.'.$match[3];
 			}, $cond);
+		return $out ?: $cond;
 	}
 
 	/**
@@ -2380,12 +2871,12 @@ class CortexQueryParser extends \Prefab {
 		$parts = $this->splitLogical($where);
 		if (is_int(strpos($where, ':')))
 			list($parts, $args) = $this->convertNamedParams($parts, $args);
-		$ncond = array();
+		$ncond = [];
 		foreach ($parts as &$part) {
 			if (preg_match('/\s*\b(AND|OR)\b\s*/i',$part))
 				continue;
 			// prefix field names
-			$part = preg_replace('/([a-z_-]+)/i', '@$1', $part, -1, $count);
+			$part = preg_replace('/([a-z_-]+(?:[\w-]+))/i', '@$1', $part, -1, $count);
 			// value comparison
 			if (is_int(strpos($part, '?'))) {
 				$val = array_shift($args);
@@ -2395,7 +2886,7 @@ class CortexQueryParser extends \Prefab {
 				if (is_int(strpos($upart = strtoupper($part), ' @LIKE '))) {
 					if ($not = is_int($npos = strpos($upart, '@NOT')))
 						$pos = $npos;
-					$val = $this->_likeValueToRegEx($val);
+					$val = '/'.$this->_likeValueToRegEx($val).'/iu';
 					$part = ($not ? '!' : '').'preg_match(?,'.$match[0].')';
 				} // find IN operator
 				elseif (is_int($pos = strpos($upart, ' @IN '))) {
@@ -2409,7 +2900,9 @@ class CortexQueryParser extends \Prefab {
 				}
 				elseif($val===null && preg_match('/(\w+)\s*([!=<>]+)\s*\?/i',$part,$nmatch)
 					&& ($nmatch[2]=='=' || $nmatch[2]=='==')){
-					$part = '(!array_key_exists(\''.ltrim($nmatch[1],'@').'\',$_row))';
+					$kval=ltrim($nmatch[1],'@');
+					$part = '(!array_key_exists(\''.$kval.'\',$_row) || '.
+						'(array_key_exists(\''.$kval.'\',$_row) && $_row[\''.$kval.'\']===NULL))';
 					unset($part);
 					continue;
 				}
@@ -2422,7 +2915,7 @@ class CortexQueryParser extends \Prefab {
 			} elseif ($count >= 1) {
 				// field comparison
 				preg_match_all('/(@\w+)/i', $part, $matches);
-				$chks = array();
+				$chks = [];
 				foreach ($matches[0] as $field)
 					$chks[] = 'isset('.$field.')';
 				$part = '('.implode(' && ',$chks).' && ('.$part.'))';
@@ -2440,10 +2933,12 @@ class CortexQueryParser extends \Prefab {
 	 */
 	protected function _mongo_parse_logical_op($parts) {
 		$b_offset = 0;
-		$ncond = array();
-		$child = array();
+		$ncond = [];
+		$child = [];
 		for ($i = 0, $max = count($parts); $i < $max; $i++) {
 			$part = $parts[$i];
+			if (is_string($part))
+				$part = trim($part);
 			if ($part == '(') {
 				// add sub-bracket to parse array
 				if ($b_offset > 0)
@@ -2454,20 +2949,21 @@ class CortexQueryParser extends \Prefab {
 				// found closing bracket
 				if ($b_offset == 0) {
 					$ncond[] = ($this->_mongo_parse_logical_op($child));
-					$child = array();
+					$child = [];
 				} elseif ($b_offset < 0)
 					trigger_error(self::E_BRACKETS,E_USER_ERROR);
 				else
 					// add sub-bracket to parse array
 					$child[] = $part;
-			} // add to parse array
-			elseif ($b_offset > 0)
-				$child[] = $part;
-			// condition type
-			elseif (!is_array($part)) {
-				if (strtoupper(trim($part)) == 'AND')
+			}
+			elseif ($b_offset > 0) {
+				// add to parse array
+				$child[]=$part;
+				// condition type
+			} elseif (!is_array($part)) {
+				if (strtoupper($part) == 'AND')
 					$add = true;
-				elseif (strtoupper(trim($part)) == 'OR')
+				elseif (strtoupper($part) == 'OR')
 					$or = true;
 			} else // skip
 				$ncond[] = $part;
@@ -2475,9 +2971,9 @@ class CortexQueryParser extends \Prefab {
 		if ($b_offset > 0)
 			trigger_error(self::E_BRACKETS,E_USER_ERROR);
 		if (isset($add))
-			return array('$and' => $ncond);
+			return ['$and' => $ncond];
 		elseif (isset($or))
-			return array('$or' => $ncond);
+			return ['$or' => $ncond];
 		else
 			return $ncond[0];
 	}
@@ -2486,10 +2982,11 @@ class CortexQueryParser extends \Prefab {
 	 * find and convert relational operators
 	 * @param $part
 	 * @param $args
+	 * @param \DB\Mongo $db
 	 * @param null $fieldConf
 	 * @return array|null
 	 */
-	protected function _mongo_parse_relational_op($part, &$args, $fieldConf=null) {
+	protected function _mongo_parse_relational_op($part, &$args, \DB\Mongo $db, $fieldConf=null) {
 		if (is_null($part))
 			return $part;
 		if (preg_match('/\<\=|\>\=|\<\>|\<|\>|\!\=|\=\=|\=|like|not like|in|not in/i', $part, $match)) {
@@ -2501,38 +2998,42 @@ class CortexQueryParser extends \Prefab {
 				$var = $exp[1];
 			// field comparison
 			elseif (!is_int(strpos($exp[1], '?')))
-				return array('$where' => 'this.'.$key.' '.$match[0].' this.'.trim($exp[1]));
+				return ['$where' => 'this.'.$key.' '.$match[0].' this.'.trim($exp[1])];
 			$upart = strtoupper($match[0]);
 			// MongoID shorthand
 			if ($key == '_id' || (isset($fieldConf[$key]) && isset($fieldConf[$key]['relType']))) {
 				if (is_array($var))
 					foreach ($var as &$id) {
-						if (!$id instanceof \MongoId)
+						if ($db->legacy() && !$id instanceof \MongoId)
 							$id = new \MongoId($id);
+						elseif (!$db->legacy() && !$id instanceof \MongoDB\BSON\ObjectId)
+							$id = new \MongoDB\BSON\ObjectId($id);
 						unset($id);
 					}
-				elseif(!$var instanceof \MongoId)
+				elseif($db->legacy() && !$var instanceof \MongoId)
 					$var = new \MongoId($var);
+				elseif(!$db->legacy() && !$var instanceof \MongoDB\BSON\ObjectId)
+					$var = new \MongoDB\BSON\ObjectId($var);
 			}
 			// find LIKE operator
-			if (in_array($upart, array('LIKE','NOT LIKE'))) {
+			if (in_array($upart, ['LIKE','NOT LIKE'])) {
 				$rgx = $this->_likeValueToRegEx($var);
-				$var = new \MongoRegex($rgx);
+				$var = $db->legacy() ? new \MongoRegex('/'.$rgx.'/iu') : new \MongoDB\BSON\Regex($rgx,'iu');
 				if ($upart == 'NOT LIKE')
-					$var = array('$not' => $var);
+					$var = ['$not' => $var];
 			} // find IN operator
-			elseif (in_array($upart, array('IN','NOT IN'))) {
+			elseif (in_array($upart, ['IN','NOT IN'])) {
 				if ($var instanceof CortexCollection)
 					$var = $var->getAll('_id',true);
-				$var = array(($upart=='NOT IN')?'$nin':'$in' => array_values($var));
+				$var = [($upart=='NOT IN')?'$nin':'$in' => array_values($var)];
 			} // translate operators
-			elseif (!in_array($match[0], array('==', '='))) {
-				$opr = str_replace(array('<>', '<', '>', '!', '='),
-					array('$ne', '$lt', '$gt', '$n', 'e'), $match[0]);
-				$var = array($opr => (strtolower($var) == 'null') ? null :
-						(is_object($var) ? $var : (is_numeric($var) ? $var + 0 : $var)));
+			elseif (!in_array($match[0], ['==', '='])) {
+				$opr = str_replace(['<>', '<', '>', '!', '='],
+					['$ne', '$lt', '$gt', '$n', 'e'], $match[0]);
+				$var = [$opr => (strtolower($var) == 'null') ? null :
+						(is_object($var) ? $var : (is_numeric($var) ? $var + 0 : $var))];
 			}
-			return array($key => $var);
+			return [$key => $var];
 		}
 		return $part;
 	}
@@ -2552,7 +3053,7 @@ class CortexQueryParser extends \Prefab {
 		// %var  -> /var$/
 		elseif ($var[0] == '%')
 			$var = substr($var, 1).'$';
-		return '/'.$var.'/iu';
+		return $var;
 	}
 
 	/**
@@ -2564,21 +3065,23 @@ class CortexQueryParser extends \Prefab {
 	 *
 	 * @param array $options
 	 * @param string $engine
+	 * @param object $db
 	 * @return array|null
 	 */
-	public function prepareOptions($options, $engine) {
+	public function prepareOptions($options, $engine, $db) {
 		if (empty($options) || !is_array($options))
 			return null;
 		switch ($engine) {
 			case 'jig':
 				if (array_key_exists('order', $options))
-					$options['order'] = str_replace(array('asc', 'desc'),
-						array('SORT_ASC', 'SORT_DESC'), strtolower($options['order']));
+					$options['order'] = preg_replace(
+						['/(?<=\h)(ASC)(?=\W|$)/i','/(?<=\h)(DESC)(?=\W|$)/i'],
+						['SORT_ASC','SORT_DESC'],$options['order']);
 				break;
 			case 'mongo':
 				if (array_key_exists('order', $options)) {
 					$sorts = explode(',', $options['order']);
-					$sorting = array();
+					$sorting = [];
 					foreach ($sorts as $sort) {
 						$sp = explode(' ', trim($sort));
 						$sorting[$sp[0]] = (array_key_exists(1, $sp) &&
@@ -2588,12 +3091,27 @@ class CortexQueryParser extends \Prefab {
 				}
 				if (array_key_exists('group', $options) && is_string($options['group'])) {
 					$keys = explode(',',$options['group']);
-					$options['group']=array('keys'=>array(),'initial'=>array(),
-						'reduce'=>'function (obj, prev) {}','finalize'=>'');
+					$options['group']=['keys'=>[],'initial'=>[],
+						'reduce'=>'function (obj, prev) {}','finalize'=>''];
 					$keys = array_combine($keys,array_fill(0,count($keys),1));
 					$options['group']['keys']=$keys;
 					$options['group']['initial']=$keys;
 				}
+				break;
+			case 'sql':
+				$char=substr($db->quotekey(''),0,1);
+				if (array_key_exists('order', $options) &&
+					FALSE===strpos($options['order'],$char))
+					$options['order']=preg_replace_callback(
+						'/(\w+\h?\(|'. // skip function names
+						'\b(?!\w+)(?:\s+\w+)+|' . // skip field args
+						'\)\s+\w+)|'. // skip function args
+						'(\b\d?[a-zA-Z_](?:[\w\-.])*)/i', // match table/field keys
+						function($match) use($db) {
+							if (!isset($match[2]))
+								return $match[1];
+							return $db->quotekey($match[2]);
+						}, $options['order']);
 				break;
 		}
 		return $options;
@@ -2603,7 +3121,7 @@ class CortexQueryParser extends \Prefab {
 class CortexCollection extends \ArrayIterator {
 
 	protected
-		$relSets = array(),
+		$relSets = [],
 		$pointer = 0,
 		$changed = false,
 		$cid;
@@ -2625,7 +3143,7 @@ class CortexCollection extends \ArrayIterator {
 	 * @param $models
 	 */
 	function setModels($models, $init=true) {
-		array_map(array($this,'add'),$models);
+		array_map([$this,'add'],$models);
 		if ($init)
 			$this->changed = false;
 	}
@@ -2639,6 +3157,7 @@ class CortexCollection extends \ArrayIterator {
 		$this->append($model);
 	}
 
+	#[\ReturnTypeWillChange]
 	public function offsetSet($i, $val) {
 		$this->changed=true;
 		parent::offsetSet($i,$val);
@@ -2693,7 +3212,7 @@ class CortexCollection extends \ArrayIterator {
 		if (!$this->hasRelSet($prop) || !($relSet = $this->getRelSet($prop)))
 			return null;
 		foreach ($keys as &$key) {
-			if ($key instanceof \MongoId)
+			if ($key instanceof \MongoId || $key instanceof \MongoDB\BSON\ObjectId)
 				$key = (string) $key;
 			unset($key);
 		}
@@ -2707,14 +3226,18 @@ class CortexCollection extends \ArrayIterator {
 	 * @return array
 	 */
 	public function getAll($prop, $raw = false) {
-		$out = array();
+		$out = [];
 		foreach ($this->getArrayCopy() as $model) {
 			if ($model instanceof Cortex && $model->exists($prop,true)) {
 				$val = $model->get($prop, $raw);
 				if (!empty($val))
 					$out[] = $val;
-			} elseif($raw)
-				$out[] = $model;
+			} elseif($raw) {
+				if (!is_array($model))
+					$out[] = $model;
+				elseif (!empty($model[$prop]))
+					$out[] = $model[$prop];
+			}
 		}
 		return $out;
 	}
@@ -2725,7 +3248,7 @@ class CortexCollection extends \ArrayIterator {
 	 * @return array
 	 */
 	public function castAll($rel_depths=1) {
-		$out = array();
+		$out = [];
 		foreach ($this->getArrayCopy() as $model)
 			$out[] = $model->cast(null,$rel_depths);
 		return $out;
@@ -2738,7 +3261,7 @@ class CortexCollection extends \ArrayIterator {
 	 * @return array
 	 */
 	public function getBy($index, $nested = false) {
-		$out = array();
+		$out = [];
 		foreach ($this->getArrayCopy() as $model)
 			if ($model->exists($index)) {
 				$val = $model->get($index, true);
@@ -2760,8 +3283,8 @@ class CortexCollection extends \ArrayIterator {
 				$parts=explode(' ',$col,2);
 				$order=empty($parts[1])?'ASC':$parts[1];
 				$col=$parts[0];
-				list($v1,$v2)=array($val1[$col],$val2[$col]);
-				if ($out=strnatcmp($v1,$v2)*
+				list($v1,$v2)=[$val1[$col],$val2[$col]];
+				if ($out=strnatcmp($v1?:'',$v2?:'')*
 					((strtoupper($order)=='ASC')*2-1))
 					return $out;
 			}
@@ -2777,7 +3300,7 @@ class CortexCollection extends \ArrayIterator {
 	public function slice($offset, $limit=null) {
 		$this->rewind();
 		$i=0;
-		$del=array();
+		$del=[];
 		while ($this->valid()) {
 			if ($i < $offset)
 				$del[]=$this->key();

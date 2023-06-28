@@ -93,6 +93,8 @@ class Page {
 
         $page->save();
 
+        (new Render)->createAll();
+
         $f3->reroute("@page_view(@slug=$page->slug)");
     }
 

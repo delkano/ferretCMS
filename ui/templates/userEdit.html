@@ -13,8 +13,8 @@
         <input type="input" name="username" value="{{@user.username}}" title="{{@L.user.username}}" placeholder="{{@L.user.username}}" />
         <input type="password" name="password" value="" title="{{@L.user.password}}" placeholder="{{@L.user.password}}" />
 
-        {~ if(@MANAGER): ~}
-        <input type="checkbox" name="manager" {~if(@user.manager): ~}checked{~endif~} title="{{@L.user.manager}}" /><label for="manager">{{@L.user.manager}}</label>
+        {~ if(@ADMIN): ~}
+        <input type="checkbox" name="admin" {~if(@user.role == 'ADMIN'): ~}checked{~endif~} title="{{@L.user.admin}}" /><label for="admin">{{@L.user.admin}}</label>
         {~ endif ~}
     </fieldset>
     <fieldset id="personal_information" class="">

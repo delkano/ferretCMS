@@ -11,7 +11,7 @@ class Access extends \Prefab {
     protected $policy=self::ALLOW;
 
     /** @var array */
-    protected $rules=array();
+    protected $rules=[];
 
     /**
      * Define an access rule to a route
@@ -26,7 +26,7 @@ class Access extends \Prefab {
         list($verbs,$path)=$this->parseRoute($route);
         foreach($subjects as $subject)
             foreach($verbs as $verb)
-                $this->rules[$subject?:'*'][$verb][$path]=$accept;
+                $this->rules[$subject?:'*'][$verb][strtolower($path)]=$accept;
         return $this;
     }
 
@@ -58,7 +58,7 @@ class Access extends \Prefab {
     function policy($default=NULL) {
         if (!isset($default))
             return $this->policy;
-        if (in_array($default=strtolower($default),array(self::ALLOW,self::DENY)))
+        if (in_array($default=strtolower($default),[self::ALLOW,self::DENY]))
             $this->policy=$default;
         return $this;
     }
@@ -72,19 +72,19 @@ class Access extends \Prefab {
     function granted($route,$subject='') {
         list($verbs,$uri)=is_array($route)?$route:$this->parseRoute($route);
         if (is_array($subject)) {
-            foreach($subject?:array('') as $s)
+            foreach($subject?:[''] as $s)
                 if ($this->granted([$verbs,$uri],$s))
                     return TRUE;
             return FALSE;
         }
         $verb=$verbs[0];//we shouldn't get more than one verb here
-        $specific=isset($this->rules[$subject][$verb])?$this->rules[$subject][$verb]:array();
-        $global=isset($this->rules['*'][$verb])?$this->rules['*'][$verb]:array();
+        $specific=isset($this->rules[$subject][$verb])?$this->rules[$subject][$verb]:[];
+        $global=isset($this->rules['*'][$verb])?$this->rules['*'][$verb]:[];
         $rules=$specific+$global;//subject-specific rules have precedence over global rules
         //specific paths are processed first:
-        $paths=array();
+        $paths=[];
         foreach ($keys=array_keys($rules) as $key) {
-            $path=str_replace('@','*@',$key);
+            $path=str_replace('@','*@',strtolower($key));
             if (substr($path,-1)!='*')
                 $path.='+';
             $paths[]=$path;
@@ -93,7 +93,8 @@ class Access extends \Prefab {
         array_multisort($paths,SORT_DESC,$keys,$vals);
         $rules=array_combine($keys,$vals);
         foreach($rules as $path=>$rule)
-            if (preg_match('/^'.preg_replace('/@\w*/','[^\/]+',str_replace('\*','.*',preg_quote($path,'/'))).'$/',$uri))
+            if (preg_match('/^'.preg_replace('/@\w*/','[^\/]+',
+                str_replace('\*','.*',preg_quote($path,'/'))).'$/i',$uri))
                 return $rule;
         return $this->policy==self::ALLOW;
     }
@@ -107,7 +108,7 @@ class Access extends \Prefab {
     function authorize($subject='',$ondeny=NULL) {
         $f3=\Base::instance();
         if (!$this->granted($route=$f3->VERB.' '.$f3->PATH,$subject) &&
-            (!isset($ondeny) || FALSE===$f3->call($ondeny,array($route,$subject)))) {
+            (!isset($ondeny) || FALSE===$f3->call($ondeny,[$route,$subject]))) {
             $f3->error($subject?403:401);
             return FALSE;
         }
@@ -128,23 +129,42 @@ class Access extends \Prefab {
         $verbs=$path='';
         if (preg_match('/^\h*(\*|[\|\w]*)\h*(\H+)/',$str,$m)) {
             list(,$verbs,$path)=$m;
-            if ($path[0]=='@')
-                $path=\Base::instance()->get('ALIASES.'.substr($path,1));
+            if ($path[0]=='@') {
+                $alias=substr($path,1);
+                $f3=\Base::instance();
+                $path=$f3->get('ALIASES.'.$alias);
+                if (!$verbs) {
+                    $verbs=[];
+                    foreach($f3['ROUTES'][$path]?:[] as $type=>$route) {
+                        foreach ($route as $verb=>$conf)
+                            if ($conf[3]==$alias)
+                                $verbs[]=$verb;
+                    }
+                    $verbs=array_unique($verbs);
+                }
+            }
         }
         if (!$verbs || $verbs=='*')
             $verbs=\Base::VERBS;
-        return array(explode('|',$verbs),$path);
+        if (!is_array($verbs))
+            $verbs=explode('|',$verbs);
+        return [$verbs,$path];
     }
 
-    //! Constructor
-    function __construct() {
-        $f3=\Base::instance();
-        $config=(array)$f3->get('ACCESS');
+    /**
+     * Constructor
+     * @param array $config
+     */
+    function __construct($config=NULL) {
+        if (!isset($config)) {
+            $f3=\Base::instance();
+            $config=(array)$f3->get('ACCESS');
+        }
         if (isset($config['policy']))
             $this->policy($config['policy']);
         if (isset($config['rules']))
             foreach((array)$config['rules'] as $str=>$subjects) {
-                foreach(array(self::DENY,self::ALLOW) as $k=>$policy)
+                foreach([self::DENY,self::ALLOW] as $k=>$policy)
                     if (stripos($str,$policy)===0)
                         $this->rule((bool)$k,substr($str,strlen($policy)),$subjects);
             }

@@ -17,4 +17,4 @@ Quick and easy: upload the files to a server, point the server root to the */www
 This is in a very early stage. I'll have a working prototype soon, but this is not then yet.
 
 ## Roadmap
- - Basic plugins: I have an idea about this, but we'll later on
+ - Basic plugins: I have an idea about this, but we'll see later on

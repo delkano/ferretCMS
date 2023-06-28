@@ -20,8 +20,9 @@ class Base {
         $f3->set("user", $user);
 
         $f3->set("SESSION.INSTALLING", true);
+        $f3->set("ADMIN", false);
 
-        $f3->route('POST @user_create: /postinstall', '\Controller\Base->post_install');
+        $f3->route('POST @user_create: /es/postinstall', '\Controller\Base->post_install');
         echo \Template::instance()->render('templates/userEdit.html');
         exit;
     }
@@ -75,6 +76,8 @@ class Base {
         $menuentry->url = $f3->BASE."/config/menus";
         $menuentry->save();
 
+        \Model\Config::store("logo", "img/logo.png");
+
         $f3->reroute("config");
     }
 
@@ -82,18 +85,19 @@ class Base {
         $path = $f3->get('UI').$args['type'].'/';
 
         if($args['type'] == 'less') {
-            $parser = new \Less_Parser(array('compress'=>true));
-            $files = $_GET['files'];
-            if(empty($files)) $files = $_GET['?files']; // Lighttpd fix
-
-            foreach(explode(",", $files) as $file) 
-                $parser->parseFile($path.$file);
+            //$parser = new \Less_Parser(array('compress'=>true));
+            $parser = new \ScssPhp\ScssPhp\Compiler;
+            $parser->setImportPaths($path);
+            $parser->setOutputStyle(\ScssPhp\ScssPhp\OutputStyle::COMPRESSED);
+            $files = empty($_GET['files'])?$_GET['?files']:$_GET['files']; // Lighttpdf fix
 
             header('Content-type: text/css');
-            echo $parser->getCss();
+            foreach(explode(",", $files) as $file) 
+                echo $parser->compileString($f3->read($path.$file))->getCss();
+
         } else {
-            $files = preg_replace('/(\.+\/)/','',$_GET['files']); // close potential hacking attempts  
-            if(empty($files)) $files = $_GET['?files']; // Lighttpd fix
+            $files = empty($_GET['files'])?$_GET['?files']:$_GET['files']; // Lighttpdf fix
+            $files = preg_replace('/(\.+\/)/','',$files); // close potential hacking attempts  
             
             echo \Template::instance()->resolve(\Web::instance()->minify($files, null, true, $path));
         }

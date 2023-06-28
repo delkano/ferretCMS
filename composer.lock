@@ -1,54 +1,53 @@
 {
     "_readme": [
         "This file locks the dependencies of your project to a known state",
-        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "dee6f5a430f27684952fe7cae6a40074",
+    "content-hash": "d94405b9ea5f649c28154ed1cf0baa28",
     "packages": [
         {
             "name": "bcosca/fatfree",
-            "version": "3.6.2",
+            "version": "3.8.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/bcosca/fatfree.git",
-                "reference": "e9aec879272c7474294c51c6c00802615afa32a6"
+                "reference": "3f7741b671accd3aa6d38461203ae5c07e39d58d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/bcosca/fatfree/zipball/e9aec879272c7474294c51c6c00802615afa32a6",
-                "reference": "e9aec879272c7474294c51c6c00802615afa32a6",
+                "url": "https://api.github.com/repos/bcosca/fatfree/zipball/3f7741b671accd3aa6d38461203ae5c07e39d58d",
+                "reference": "3f7741b671accd3aa6d38461203ae5c07e39d58d",
                 "shasum": ""
             },
             "require": {
-                "php": ">=5.3.6"
+                "bcosca/fatfree-core": "^3.8"
             },
-            "type": "library",
-            "autoload": {
-                "files": [
-                    "lib/base.php"
-                ]
-            },
+            "type": "project",
             "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "GPL-3.0"
             ],
             "description": "A powerful yet easy-to-use PHP micro-framework designed to help you build dynamic and robust Web applications - fast!",
             "homepage": "http://fatfreeframework.com/",
-            "time": "2017-06-26T10:14:59+00:00"
+            "support": {
+                "issues": "https://github.com/bcosca/fatfree/issues",
+                "source": "https://github.com/bcosca/fatfree/tree/3.8.1"
+            },
+            "time": "2022-11-04T23:22:40+00:00"
         },
         {
             "name": "bcosca/fatfree-core",
-            "version": "3.6.2",
+            "version": "3.8.1",
             "source": {
                 "type": "git",
-                "url": "https://github.com/bcosca/fatfree-core.git",
-                "reference": "ded2875b61e69e980d04346ca9b42350ffad8d70"
+                "url": "https://github.com/f3-factory/fatfree-core.git",
+                "reference": "f6ea45472f55a1ecabd4ced74cb56f0efd6af34e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/bcosca/fatfree-core/zipball/ded2875b61e69e980d04346ca9b42350ffad8d70",
-                "reference": "ded2875b61e69e980d04346ca9b42350ffad8d70",
+                "url": "https://api.github.com/repos/f3-factory/fatfree-core/zipball/f6ea45472f55a1ecabd4ced74cb56f0efd6af34e",
+                "reference": "f6ea45472f55a1ecabd4ced74cb56f0efd6af34e",
                 "shasum": ""
             },
             "require": {
@@ -66,20 +65,24 @@
             ],
             "description": "A powerful yet easy-to-use PHP micro-framework designed to help you build dynamic and robust Web applications - fast!",
             "homepage": "http://fatfreeframework.com/",
-            "time": "2017-06-26T10:03:43+00:00"
+            "support": {
+                "issues": "https://github.com/f3-factory/fatfree-core/issues",
+                "source": "https://github.com/f3-factory/fatfree-core/tree/3.8.1"
+            },
+            "time": "2022-11-04T23:15:19+00:00"
         },
         {
             "name": "ikkez/f3-cortex",
-            "version": "v1.5.0",
+            "version": "v1.7.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ikkez/f3-cortex.git",
-                "reference": "2cd1712eeae33c9d05716e8a1d8e3796f0ea4016"
+                "reference": "44b30fd4ca1b199729778d72f3840318cc64dfd9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ikkez/f3-cortex/zipball/2cd1712eeae33c9d05716e8a1d8e3796f0ea4016",
-                "reference": "2cd1712eeae33c9d05716e8a1d8e3796f0ea4016",
+                "url": "https://api.github.com/repos/ikkez/f3-cortex/zipball/44b30fd4ca1b199729778d72f3840318cc64dfd9",
+                "reference": "44b30fd4ca1b199729778d72f3840318cc64dfd9",
                 "shasum": ""
             },
             "require": {
@@ -104,21 +107,28 @@
                 "orm",
                 "sql"
             ],
-            "time": "2017-06-30T13:23:09+00:00"
+            "support": {
+                "issues": "https://github.com/ikkez/f3-cortex/issues",
+                "source": "https://github.com/ikkez/f3-cortex/tree/v1.7.6"
+            },
+            "time": "2023-01-23T22:28:35+00:00"
         },
         {
             "name": "ikkez/f3-schema-builder",
-            "version": "v2.2.1",
+            "version": "v2.2.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ikkez/f3-schema-builder.git",
-                "reference": "9c15676247e6f85a28c9f5db126b9030cdc5dc05"
+                "reference": "1fc4cf37e4683037d35a8536232bcacbf7f4dd0b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ikkez/f3-schema-builder/zipball/9c15676247e6f85a28c9f5db126b9030cdc5dc05",
-                "reference": "9c15676247e6f85a28c9f5db126b9030cdc5dc05",
+                "url": "https://api.github.com/repos/ikkez/f3-schema-builder/zipball/1fc4cf37e4683037d35a8536232bcacbf7f4dd0b",
+                "reference": "1fc4cf37e4683037d35a8536232bcacbf7f4dd0b",
                 "shasum": ""
+            },
+            "require": {
+                "bcosca/fatfree-core": "^3.6"
             },
             "type": "library",
             "autoload": {
@@ -137,82 +147,104 @@
                 "fatfree",
                 "sql"
             ],
-            "time": "2017-04-25T20:19:11+00:00"
+            "support": {
+                "issues": "https://github.com/ikkez/f3-schema-builder/issues",
+                "source": "https://github.com/ikkez/f3-schema-builder/tree/v2.2.6"
+            },
+            "time": "2023-02-13T19:12:50+00:00"
         },
         {
-            "name": "oyejorge/less.php",
-            "version": "v1.7.0.14",
+            "name": "scssphp/scssphp",
+            "version": "v1.11.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/oyejorge/less.php.git",
-                "reference": "42925c5a01a07d67ca7e82dfc8fb31814d557bc9"
+                "url": "https://github.com/scssphp/scssphp.git",
+                "reference": "33749d12c2569bb24071f94e9af828662dabb068"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/oyejorge/less.php/zipball/42925c5a01a07d67ca7e82dfc8fb31814d557bc9",
-                "reference": "42925c5a01a07d67ca7e82dfc8fb31814d557bc9",
+                "url": "https://api.github.com/repos/scssphp/scssphp/zipball/33749d12c2569bb24071f94e9af828662dabb068",
+                "reference": "33749d12c2569bb24071f94e9af828662dabb068",
                 "shasum": ""
             },
             "require": {
-                "php": ">=5.3"
+                "ext-ctype": "*",
+                "ext-json": "*",
+                "php": ">=5.6.0"
             },
             "require-dev": {
-                "phpunit/phpunit": "~4.8.24"
+                "bamarni/composer-bin-plugin": "^1.4",
+                "phpunit/phpunit": "^5.7 || ^6.5 || ^7.5 || ^8.3 || ^9.4",
+                "sass/sass-spec": "*",
+                "squizlabs/php_codesniffer": "~3.5",
+                "symfony/phpunit-bridge": "^5.1",
+                "thoughtbot/bourbon": "^7.0",
+                "twbs/bootstrap": "~5.0",
+                "twbs/bootstrap4": "4.6.1",
+                "zurb/foundation": "~6.5"
+            },
+            "suggest": {
+                "ext-iconv": "Can be used as fallback when ext-mbstring is not available",
+                "ext-mbstring": "For best performance, mbstring should be installed as it is faster than ext-iconv"
             },
             "bin": [
-                "bin/lessc"
+                "bin/pscss"
             ],
             "type": "library",
+            "extra": {
+                "bamarni-bin": {
+                    "forward-command": false,
+                    "bin-links": false
+                }
+            },
             "autoload": {
-                "psr-0": {
-                    "Less": "lib/"
-                },
-                "classmap": [
-                    "lessc.inc.php"
-                ]
+                "psr-4": {
+                    "ScssPhp\\ScssPhp\\": "src/"
+                }
             },
             "notification-url": "https://packagist.org/downloads/",
             "license": [
-                "Apache-2.0"
+                "MIT"
             ],
             "authors": [
                 {
-                    "name": "Matt Agar",
-                    "homepage": "https://github.com/agar"
+                    "name": "Anthon Pang",
+                    "email": "apang@softwaredevelopment.ca",
+                    "homepage": "https://github.com/robocoder"
                 },
                 {
-                    "name": "Martin Jantošovič",
-                    "homepage": "https://github.com/Mordred"
-                },
-                {
-                    "name": "Josh Schmidt",
-                    "homepage": "https://github.com/oyejorge"
+                    "name": "Cédric Morin",
+                    "email": "cedric@yterium.com",
+                    "homepage": "https://github.com/Cerdic"
                 }
             ],
-            "description": "PHP port of the Javascript version of LESS http://lesscss.org (Originally maintained by Josh Schmidt)",
-            "homepage": "http://lessphp.gpeasy.com",
+            "description": "scssphp is a compiler for SCSS written in PHP.",
+            "homepage": "http://scssphp.github.io/scssphp/",
             "keywords": [
                 "css",
                 "less",
-                "less.js",
-                "lesscss",
-                "php",
+                "sass",
+                "scss",
                 "stylesheet"
             ],
-            "time": "2017-03-28T22:19:25+00:00"
+            "support": {
+                "issues": "https://github.com/scssphp/scssphp/issues",
+                "source": "https://github.com/scssphp/scssphp/tree/v1.11.0"
+            },
+            "time": "2022-09-02T21:24:55+00:00"
         },
         {
             "name": "xfra35/f3-access",
-            "version": "v1.0.0",
+            "version": "v1.2.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/xfra35/f3-access.git",
-                "reference": "7b62d1c0e0a881c8b2e510fee31863fc44afa7b7"
+                "reference": "de8e697e3f61b7d4e0d71c448346f38162677796"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/xfra35/f3-access/zipball/7b62d1c0e0a881c8b2e510fee31863fc44afa7b7",
-                "reference": "7b62d1c0e0a881c8b2e510fee31863fc44afa7b7",
+                "url": "https://api.github.com/repos/xfra35/f3-access/zipball/de8e697e3f61b7d4e0d71c448346f38162677796",
+                "reference": "de8e697e3f61b7d4e0d71c448346f38162677796",
                 "shasum": ""
             },
             "require": {
@@ -236,20 +268,24 @@
                 "fatfree",
                 "permissions"
             ],
-            "time": "2016-02-18T14:42:16+00:00"
+            "support": {
+                "issues": "https://github.com/xfra35/f3-access/issues",
+                "source": "https://github.com/xfra35/f3-access/tree/v1.2.2"
+            },
+            "time": "2021-04-29T16:52:25+00:00"
         },
         {
             "name": "xfra35/f3-multilang",
-            "version": "v1.1.0",
+            "version": "v1.3.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/xfra35/f3-multilang.git",
-                "reference": "9019a119385de053883d5e996eb9d044a28af74f"
+                "reference": "63464a32fccd578503270829c6d19bb030d2b34a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/xfra35/f3-multilang/zipball/9019a119385de053883d5e996eb9d044a28af74f",
-                "reference": "9019a119385de053883d5e996eb9d044a28af74f",
+                "url": "https://api.github.com/repos/xfra35/f3-multilang/zipball/63464a32fccd578503270829c6d19bb030d2b34a",
+                "reference": "63464a32fccd578503270829c6d19bb030d2b34a",
                 "shasum": ""
             },
             "require": {
@@ -273,7 +309,11 @@
                 "localization",
                 "multilingual"
             ],
-            "time": "2016-04-18T09:25:51+00:00"
+            "support": {
+                "issues": "https://github.com/xfra35/f3-multilang/issues",
+                "source": "https://github.com/xfra35/f3-multilang/tree/master"
+            },
+            "time": "2019-11-06T13:46:51+00:00"
         }
     ],
     "packages-dev": [],
@@ -283,5 +323,6 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": [],
-    "platform-dev": []
+    "platform-dev": [],
+    "plugin-api-version": "2.3.0"
 }

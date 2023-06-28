@@ -27,6 +27,19 @@ class Test_Common {
 			'copyto: raw record copied to hive'
 		);
 
+		$news->copyto_flat('news');
+
+		$author = new AuthorModel();
+		$author->load();
+		$author->copyto_flat('author');
+		$test->expect(
+			is_array($f3->news['tags']) &&
+			is_int($f3->news['tags'][0]) &&
+			is_array($f3->author['news']) &&
+			is_int($f3->author['news'][0]),
+			'copyto_flat: record copied to hive with relations being flat arrays of IDs'
+		);
+
 		$news->reset();
 
 		$news->copyfrom('record1');
@@ -185,6 +198,21 @@ class Test_Common {
 		$test->expect($filter == array('( foo1 = ? and bar1 = ? ) or ( foo2 = ? and bar2 = ? ) or ( foo3 = ? and bar3 = ? )',
 				10,20,30,40,50,60),
 			'merge multiple filters');
+
+		$qp = new \DB\CortexQueryParser();
+
+		$test->expect(
+			$qp->prepareFilter(['foo > bar'],'sql', $f3->DB) === ['`foo` > `bar`'],
+			'auto-escape fields'
+		);
+		$test->expect(
+			$qp->prepareFilter(['created_at > DATE_SUB(NOW(), INTERVAL 1 DAY)'],'sql', $f3->DB) === ['`created_at` > DATE_SUB(NOW(), INTERVAL 1 DAY)'],
+			'respect function when auto-escaping'
+		);
+		$test->expect(
+			$qp->prepareFilter(['foo(?,?,3,?)',1,2,4],'sql', $f3->DB) === ['foo(?,?,3,?)',1,2,4],
+			'query parser: correct function args'
+		);
 
 		///////////////////////////////////
 		return $test->results();

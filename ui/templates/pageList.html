@@ -10,7 +10,7 @@
         </tr>
     </thead>
     <tbody>
-        {~ foreach(@pages?:[] as @page): ~}
+        {~ foreach(@pages as @page): ~}
         <tr>
             <td>{{@page.id}}</td>
             <td><a href="{{@BASE}}{{'page_edit', 'id='.@page.id| alias}}" title="{{@page.title}}">{{@page.title}}</a></td>

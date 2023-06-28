@@ -3,7 +3,7 @@
         "ikkez/f3-cortex": "1.*",
         "bcosca/fatfree": "^3.6",
         "xfra35/f3-access": "^1.0",
-        "oyejorge/less.php": "v1.7.0.14",
-        "xfra35/f3-multilang": "^1.1"
+        "xfra35/f3-multilang": "^1.1",
+        "scssphp/scssphp": "^1.11"
     }
 }

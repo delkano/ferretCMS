@@ -10,7 +10,7 @@ class Test_Relation {
 	private function getResult($result)
 	{
 		$out = array();
-		foreach ($result as $row) {
+		foreach ($result?:[] as $row) {
 			if(is_object($row))
 				$row = $row->cast();
 			unset($row['_id']);
@@ -207,7 +207,8 @@ class Test_Relation {
 
 		$tag->reset();
 		$news->load(array($news_pk.' = ?', $news_id[1]));
-		$news->tags = $tag->load(array($tag_pk.' != ?',$tag_id[0]));
+		$tag->load(array($tag_pk.' != ?',$tag_id[0]));
+		$news->tags = $tag;
 		$news->save();
 		$news->reset();
 		$news->load(array($news_pk.' = ?', $news_id[1]));
@@ -241,7 +242,8 @@ class Test_Relation {
 		$profile_pk = (is_int(strpos($type,'sql'))?$pc['primary']:'_id');
 
 		$profile->message = 'Hello World';
-		$profile->author = $author->load(array($author_pk.' = ?',$author_id[0]));
+		$author->load(array($author_pk.' = ?',$author_id[0]));
+		$profile->author = $author;
 		$profile->save();
 		$profile_id = $profile->_id;
 		$profile->reset();
@@ -282,6 +284,41 @@ class Test_Relation {
 			$type.': has-many inverse relation'
 		);
 
+		$author->news[] = $news_id[1];
+		$author->save();
+		$author->reset();
+		$author->load(array($author_pk.' = ?', $author_id[0]));
+		$result = $this->getResult($author->news);
+		$test->expect(
+			count($result)==2 &&
+			$result[0]['title'] == "Responsive Images" &&
+			$result[1]['title'] == "CSS3 Showcase",
+			$type.': has-many add relation, inverse ways'
+		);
+
+		$author->news = [$news_id[1]];
+		$author->save();
+		$author->reset();
+		$author->load(array($author_pk.' = ?', $author_id[0]));
+		$result = $this->getResult($author->news);
+		$test->expect(
+			$result[0]['title'] == "CSS3 Showcase",
+			$type.': has-many remove relation, inverse ways'
+		);
+
+		$author->news = null;
+		$author->save();
+		$author->reset();
+		$author->load(array($author_pk.' = ?', $author_id[0]));
+		$result = $this->getResult($author->news);
+		$test->expect(
+			empty($result),
+			$type.': has-many clear relation, inverse ways'
+		);
+		$author->news = [$news_id[0]];
+		$author->save();
+		$author->reset();
+
 		// many to many relation
 		///////////////////////////////////
 
@@ -302,7 +339,8 @@ class Test_Relation {
 		);
 
 
-		$tag3 = $tag->load(array($tag_pk.' = ?',$tag_id[2]));
+		$tag->load(array($tag_pk.' = ?',$tag_id[2]));
+		$tag3 = $tag;
 		$news->tags2[] = $tag3;
 		$news->save();
 		$a=count($news->tags2);
@@ -337,16 +375,17 @@ class Test_Relation {
 		$c=$tag1[0]->news[0]->title == 'Can it run Crysis?';
 		$news->erase();
 		$tag1 = $tag->find(array($tag_pk.' = ?',$tag_id[0]));
-		$d=count($tag1[0]->news);
+		$d=count($tag1[0]->news?:[]);
 		$test->expect(
 			$a == 1 && $b == 1 && $c && $d == 0,
 			$type.': many-to-many relation cleaned by erase cascade'
 		);
 
 		$news->load(array($news_pk.' = ?', $news_id[0]));
-		$all = $news->find();
+		$all = $news->find(null,['order'=>'title']);
+
 		$test->expect(
-			$all[1]->tags2 === NULL
+			$all[0]->tags2 === NULL
 			&& $all[2]->author === NULL,
 			$type.': empty relations are NULL'
 		);

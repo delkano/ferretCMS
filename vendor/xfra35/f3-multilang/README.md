@@ -13,6 +13,8 @@ Demo: [here](http://ml.aesx.fr).
     * [Global routes](#global-routes)
 * [Rerouting](#rerouting)
 * [Migration mode](#migration-mode)
+* [Strict mode](#strict-mode)
+* [Passthru mode](#passthru-mode)
 * [API](#api)
 * [Potential improvements](#potential-improvements)
 
@@ -179,6 +181,34 @@ Example:
 * when migration mode is disabled, `/contact` throws a 404 error
 * when migration mode is enabled, `/contact` performs a 301 redirection to `/en/contact` (the primary language)
 
+## Strict mode
+
+When URLs are rewritten, an error is thrown if duplicate URLs are detected. E.g:
+
+```ini
+[MULTILANG.rules.en]
+contact = /contact
+blog = /contact
+```
+
+This behaviour is called "strict mode" and is enabled by default.
+
+You can disable it by setting `MULTILANG.strict` to `FALSE`, in which case no error will be thrown.
+
+## Passthru mode
+
+When starting a new monolingual project, it may be interesting to keep the dependency to the Multilang plugin
+while not altering routes, just in case one day the project turns multilingual.
+
+The `passthru` mode is meant for this situation. Set `MULTILANG.passthru` to `TRUE` to enable it.
+
+When the passthru mode is enabled, the plugin doesn't do much:
+
+* it reads the `MULTILANG` configuration variable
+* it sets `$f3->LANGUAGE` accordingly to the primary language
+* it leaves the framework routes untouched
+* it provides its usual public methods and properties
+
 ## API
 
 ```php
@@ -209,6 +239,13 @@ echo $ml->primary;// en
 echo $ml->auto;//FALSE
 ```
 
+### passthru
+
+**TRUE if passthru mode is enabled**
+
+```php
+echo $ml->passthru;//FALSE
+```
 
 ### locale()
 
@@ -265,6 +302,19 @@ echo $ml->displayCountry('ru');// Russia
 
 ```php
 $ml->languages();// array('en','ja','es')
+```
+
+### locales()
+
+**Return the list of available locales (indexed by languages)**
+
+```php
+$ml->locales();
+/* array(
+    'en' => 'en-GB,en-US,en',
+    'ja' => 'ja-JP,ja',
+    'es' => 'es-ES,es'
+)*/
 ```
 
 ### aliases()
