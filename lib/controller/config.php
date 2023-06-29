@@ -14,7 +14,7 @@ class Config {
         $f3->set('site.subtemplate', "configEdit");
         $f3->set('site.template', "config");
 
-        echo \Template::instance()->render("layout.html");
+        echo \Template::instance()->render($f3->theme."/layout.html");
     }
 
     public function save($f3) {
@@ -67,6 +67,7 @@ class Config {
             \Model\Config::store("logo", $logo);
         }
 
+        (new Render)->createAll();
         $f3->reroute("@home");
     }
 }

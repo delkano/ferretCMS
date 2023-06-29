@@ -23,7 +23,7 @@ class Base {
         $f3->set("ADMIN", false);
 
         $f3->route('POST @user_create: /es/postinstall', '\Controller\Base->post_install');
-        echo \Template::instance()->render('templates/userEdit.html');
+        echo \Template::instance()->render($f3->theme.'/templates/userEdit.html');
         exit;
     }
 
@@ -76,15 +76,20 @@ class Base {
         $menuentry->url = $f3->BASE."/config/menus";
         $menuentry->save();
 
+        // And an empty main menu
+        $menu = new \Model\Menu();
+        $menu->name = "Main Menu";
+        $menu->save();
+
         \Model\Config::store("logo", "img/logo.png");
 
         $f3->reroute("config");
     }
 
     public function assets($f3, $args) {
-        $path = $f3->get('UI').$args['type'].'/';
+        $path = $f3->UI.$f3->theme.'/'.$args['type'].'/';
 
-        if($args['type'] == 'less') {
+        if($args['type'] == 'css') {
             //$parser = new \Less_Parser(array('compress'=>true));
             $parser = new \ScssPhp\ScssPhp\Compiler;
             $parser->setImportPaths($path);
@@ -99,7 +104,10 @@ class Base {
             $files = empty($_GET['files'])?$_GET['?files']:$_GET['files']; // Lighttpdf fix
             $files = preg_replace('/(\.+\/)/','',$files); // close potential hacking attempts  
             
-            echo \Template::instance()->resolve(\Web::instance()->minify($files, null, true, $path));
+            header('Content-type: application/x-javascript');
+            foreach(explode(",", $files) as $file) 
+                echo $f3->read($path.$file);
+            //echo \Template::instance()->resolve(\Web::instance()->minify($files, null, true, $path));
         }
     }
 }

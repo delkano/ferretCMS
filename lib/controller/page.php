@@ -17,19 +17,19 @@ class Page {
         $f3->set("page", $page);
 
         $f3->set('site.template', "pageView");
-        echo \Template::instance()->render("layout.html");
+        echo \Template::instance()->render($f3->theme."/layout.html");
     }
 
     public function editList($f3, $params) {
         $this->getList($f3, $params);
         $f3->set('site.subtemplate', "pageList");
         $f3->set('site.template', "config");
-        echo \Template::instance()->render("layout.html");
+        echo \Template::instance()->render($f3->theme."/layout.html");
     }
     public function viewList($f3, $params) {
         $this->getList($f3, $params);
         $f3->set('site.template', "categoryView");
-        echo \Template::instance()->render("layout.html");
+        echo \Template::instance()->render($f3->theme."/layout.html");
     }
     public function getList($f3, $params) {
         $pages = new \Model\Page();
@@ -53,7 +53,7 @@ class Page {
         $page = new \Model\Page();
         $f3->set("page", $page);
 
-        echo \Template::instance()->render("layout.html");
+        echo \Template::instance()->render($f3->theme."/layout.html");
     }
 
     public function edit($f3, $params) {
@@ -69,7 +69,7 @@ class Page {
 
         $f3->set("page", $page);
 
-        echo \Template::instance()->render("layout.html");
+        echo \Template::instance()->render($f3->theme."/layout.html");
     }
 
     public function update($f3, $params) {

@@ -4,6 +4,7 @@ namespace Controller;
 
 class Menu extends \Prefab {
     public function getOne($name) { //This is a special controller, as it will only be used as a filter
+        $f3 = \Base::instance();
         $menu = new \Model\Menu();
         $menu->load(array('name=?', $name));
 
@@ -11,7 +12,7 @@ class Menu extends \Prefab {
 
         \Base::instance()->set("menu", $menu);
 
-        return \Template::instance()->render("menu.html");
+        return \Template::instance()->render($f3->theme."/menu.html");
     }
 
     public function getList($f3) {
@@ -30,11 +31,11 @@ class Menu extends \Prefab {
 
         $f3->set("js_files", array("config"));
 
-        echo \Template::instance()->render("layout.html");
+        echo \Template::instance()->render($f3->theme."/layout.html");
     }
 
     public function update($f3) {
-        foreach($f3['POST']['delete']?:[] as $id) {
+        foreach($f3->get('POST.delete')?:[] as $id) {
             $menu = new \Model\Menu();
             $menu->load(array("id=?", $id));
             $menu->erase();
@@ -54,6 +55,7 @@ class Menu extends \Prefab {
 
             $menu->save();
         }
+        (new Render)->createAll();
         $f3->reroute("@menu_list");
     }
 }

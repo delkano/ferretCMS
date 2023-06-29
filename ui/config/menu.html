@@ -1,0 +1,13 @@
+<ul>
+    {~ foreach(@menu.children?:[] as @item): ~}
+    <li {{ !empty(@item.page) && strpos( @URI, @item.page.slug ) !== false ? ' class="active"' : '' }}>
+        {~ if(@item.url): ~}
+        <a href="{{@item.url}}" title="{{@item.name}}">{{@item.name}}</a>
+        {~ elseif(@item.page): ~}
+        <a href="{{@static?'':@BASE}}{{ 'page_view', 'slug='.@item.page.slug.(@static?'.html':'') | alias}}" title="{{@item.name}}">{{@item.name}}</a>
+        {~ else: ~}
+        {{@item.name}}
+        {~ endif ~}
+        <include if="{{@item.children}}" with="menu=item" href="menu.html" />
+    {~ endforeach ~}
+</ul>

@@ -1,10 +1,10 @@
 <?php 
 // composer autoloader for required packages and dependencies
-require_once('../vendor/autoload.php');
+require_once('../../vendor/autoload.php');
 /** @var \Base $f3 */
 $f3 = \Base::instance();
 // F3 autoloader for application business code
-$f3->config('../config.ini');
+$f3->config('../../config.ini');
 
 if(file_exists($f3->get("DB_NAME")))  {
     $f3->set('DB', new \DB\SQL('sqlite:'.$f3->get('DB_NAME')));
@@ -14,6 +14,9 @@ if(file_exists($f3->get("DB_NAME")))  {
     $f3->set("cfg.title", \Model\Config::read("title"));
     $f3->set("cfg.description", \Model\Config::read("description"));
     $f3->set("cfg.home", \Model\Config::read("home"));
+    $f3->set("static", false);
+
+    $f3->set('theme', 'config');
 
 } else if($f3->get("URI") != '/install') {
     $f3->set('DB', new \DB\SQL('sqlite:'.$f3->get('DB_NAME')));
@@ -85,24 +88,26 @@ $f3->route('GET @user_profile_edit: /user/profile/edit', '\Controller\User->prof
 $f3->route('POST /postinstall', '\Controller\Base->post_install');
 
 //Config
-$f3->route('GET @config: /config/general', '\Controller\Config->create');
-$f3->route('POST @config: /config/general', '\Controller\Config->save');
+$f3->route('GET @config: /general', '\Controller\Config->create');
+$f3->route('POST @config: /general', '\Controller\Config->save');
 $f3->redirect('GET /config', '@config');
 
-$f3->route('GET @menu_list: /config/menus', '\Controller\Menu->getList');
-$f3->route('POST @menu_update: /config/menus', '\Controller\Menu->update');
+$f3->route('GET @menu_list: /menus', '\Controller\Menu->getList');
+$f3->route('POST @menu_update: /menus', '\Controller\Menu->update');
 
 // - Page navigation and stuff
-$f3->route('GET @page_new: /config/page/new', '\Controller\Page->create');
-$f3->route('GET @page_list: /config/pages', '\Controller\Page->editList');
-$f3->route('GET @page_edit: /config/page/@id/edit', '\Controller\Page->edit');
-$f3->route('POST @page_update: /config/page/@id/update', '\Controller\Page->update');
-$f3->route('POST @page_create: /config/page/create', '\Controller\Page->update');
-$f3->route('GET @page_delete: /config/page/@id/delete', '\Controller\Page->delete');
+$f3->route('GET @page_new: /page/new', '\Controller\Page->create');
+$f3->route('GET @page_list: /pages', '\Controller\Page->editList');
+$f3->route('GET @page_edit: /page/@id/edit', '\Controller\Page->edit');
+$f3->route('POST @page_update: /page/@id/update', '\Controller\Page->update');
+$f3->route('POST @page_create: /page/create', '\Controller\Page->update');
+$f3->route('GET @page_delete: /page/@id/delete', '\Controller\Page->delete');
 $f3->route('GET @category_view: /category/@cat', '\Controller\Page->viewList');
-$f3->route('GET @category_edit: /config/category/@cat', '\Controller\Page->editList');
+$f3->route('GET @category_edit: /category/@cat', '\Controller\Page->editList');
 $f3->route('GET @page_view: /@slug', '\Controller\Page->getOne');
 
-//if(!empty($f3["MULTILANG"]))
+/*
+if(!empty($f3["MULTILANG"]))
     \Multilang::instance();
+*/
 $f3->run();

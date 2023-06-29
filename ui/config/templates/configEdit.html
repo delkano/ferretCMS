@@ -1,0 +1,17 @@
+<form action="{{@BASE}}{{'config' | alias}}" method="POST" accept-charset="utf-8" enctype="multipart/form-data" class="wide">
+    <div class="logo">
+        {~ if(!empty(@cfg.logo)): ~}
+        <img src="{{@BASE}}/img/logo.png" />
+        {~ endif ~}
+        <input type="hidden" name="MAX_FILE_SIZE" value="2097152" />
+        <label for="upload-logo">{{@L.basic.logoupload}}</label><input type="file" name="upload-logo" value="" accept="image/*" id="upload-logo">
+    </div>
+    <span class="field">
+        <label for="name">{{@L.basic.title}}</label><input type="text" name="title" placeholder="{{@L.basic.title}}" value="{{@cfg.title}}" id="title" required=true />
+    </span>
+    <span class="field">
+        <label for="description">{{@L.basic.description}}</label>
+        <textarea class="beautiful" name="description" id="description" placeholder="{{@L.basic.description}}">{{@cfg.description}}</textarea>
+    </span>
+    <input type="submit" value="{{@L.basic.save}}" />
+</form>

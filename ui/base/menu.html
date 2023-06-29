@@ -4,7 +4,7 @@
         {~ if(@item.url): ~}
         <a href="{{@item.url}}" title="{{@item.name}}">{{@item.name}}</a>
         {~ elseif(@item.page): ~}
-        <a href="{{@BASE}}{{ 'page_view', 'slug='.@item.page.slug | alias}}" title="{{@item.name}}">{{@item.name}}</a>
+        <a href="{{@static?'':@BASE}}{{ 'page_view', 'slug='.@item.page.slug.(@static?'.html':'') | alias}}" title="{{@item.name}}">{{@item.name}}</a>
         {~ else: ~}
         {{@item.name}}
         {~ endif ~}

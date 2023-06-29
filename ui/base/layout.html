@@ -4,22 +4,24 @@
         <meta charset="utf-8">
         <meta http-equiv="x-ua-compatible" content="ie=edge">
         <title>{~ if(@site.title): ~}{{@site.title}} - {~ endif ~}{{@cfg.title}}</title>
-        {~ if(!empty(@site.description)): ~}
-        <meta name="description" content="{{@site.description}}">
-        {~ endif ~}
+        <meta name="description" content="{{@cfg.description}}">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link type="text/plain" rel="author" href="{{@BASE}}/humans.txt" />
 
         <link rel="apple-touch-icon" href="apple-touch-icon.png">
         <!-- Place favicon.ico in the root directory -->
-        <link rel="manifest" href="{{@BASE}}/manifest.json">
+        <!--link rel="manifest" href="{{@BASE}}/manifest.json"-->
 
-        <link rel="stylesheet" href="{{@BASE}}/css/trumbowyg.min.css">
+        <link rel="stylesheet" href="/css/trumbowyg.min.css">
 
-        <link rel="stylesheet" href="{{@BASE}}/css/normalize.css">
-        <link rel="stylesheet" href="{{@BASE}}/css/chosen.min.css">
-        <link rel="stylesheet" type="text/css" href="{{@BASE}}/assets/less?files=main.scss">
-        <script src="{{@BASE}}/js/vendor/modernizr-2.8.3.min.js"></script>
+        <link rel="stylesheet" href="/css/normalize.css">
+        <link rel="stylesheet" href="/css/chosen.min.css">
+        {~ if(@static): ~}
+        <link rel="stylesheet" type="text/css" href="/css/main.css">
+        {~ else: ~}
+        <link rel="stylesheet" type="text/css" href="{{@BASE}}/assets/css?files=main.scss">
+        {~ endif ~}
+        <script src="/js/vendor/modernizr-2.8.3.min.js"></script>
     </head>
     <body>
         <!--[if lt IE 8]>
@@ -29,7 +31,7 @@
         <!-- Add your site or application content here -->
         <header>
             <a href="{{@BASE}}/">
-                <div id='title'><img src="{{@BASE}}/{{@cfg.logo}}" id="logo" /><h1>{{@cfg.title}}</h1></div>
+                <div id='title'><img src="/{{@cfg.logo}}" id="logo" /><h1>{{@cfg.title}}</h1></div>
             </a>
             
             <nav id="main-menu">
@@ -43,7 +45,7 @@
             <div class="note popup">{{@note}}</div>
             {~ endif ~}
 
-            <include if="{{isset(@site.template)}}" href="{{'templates/'.@site.template.'.html'}}"/>
+            <include if="{{isset(@site.template)}}" href="{{@theme.'/templates/'.@site.template.'.html'}}"/>
         </div>
         <footer>
             
@@ -51,14 +53,22 @@
 
         <script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
         <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.12.0.min.js"><\/script>')</script>
-        <script src="{{@BASE}}/js/vendor/trumbowyg.min.js"></script>
-        <script src="{{@BASE}}/js/vendor/jquery.singleuploadimage.js"></script>
-        <script src="{{@BASE}}/js/vendor/chosen.jquery.min.js"></script>
-        <script src="{{@BASE}}/assets/js?files=plugins.js"></script>
-        <script src="{{@BASE}}/assets/js?files=main.js"></script>
-        {~ foreach(!empty(@js_files)?@js_files:[] as @file): ~}
-        <script src="{{@BASE}}/assets/js?files={{@file}}.js"></script>
-        {~ endforeach ~}
+        <script src="/js/vendor/trumbowyg.min.js"></script>
+        <script src="/js/vendor/jquery.singleuploadimage.js"></script>
+        <script src="/js/vendor/chosen.jquery.min.js"></script>
+        {~ if(@static): ~}
+            <script src="{{@BASE}}/js/plugins.js"></script>
+            <script src="{{@BASE}}/js/main.js"></script>
+            {~ foreach(!empty(@js_files)?@js_files:[] as @file): ~}
+            <script src="{{@BASE}}/js/{{@file}}.js"></script>
+            {~ endforeach ~}
+        {~ else: ~}
+            <script src="{{@BASE}}/assets/js?files=plugins.js"></script>
+            <script src="{{@BASE}}/assets/js?files=main.js"></script>
+            {~ foreach(!empty(@js_files)?@js_files:[] as @file): ~}
+            <script src="{{@BASE}}/assets/js?files={{@file}}.js"></script>
+            {~ endforeach ~}
+        {~ endif ~}
 
         <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
         <!--
