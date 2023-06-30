@@ -1,0 +1,24 @@
+<table class="plugin list">
+    <thead>
+        <tr>
+            <th>{{@L.plugin.name}}</th>
+            <th>{{@L.plugin.version}}</th>
+            <th>{{@L.plugin.description}}</th>
+            <th>{{@L.plugin.author}}</th>
+            <th>{{@L.plugin.active}}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {~ foreach(@plugins as @plugin): ~}
+        <tr>
+            <td>{{@plugin.name}}</td>
+            <td>{{@plugin.version}}</td>
+            <td>{{@plugin.description}}</td>
+            <td>{{@plugin.author}}</td>
+            <td><a href='{{@BASE}}{{'plugin_toggle', 'path='.@plugin.path | alias}}' class='toggle {{@plugin.active?"active":"inactive"}}'>toggle</a></td>
+        </tr>
+        {~ endforeach ~}
+    </tbody>
+</table>
+
+

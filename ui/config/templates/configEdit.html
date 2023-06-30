@@ -1,7 +1,7 @@
 <form action="{{@BASE}}{{'config' | alias}}" method="POST" accept-charset="utf-8" enctype="multipart/form-data" class="wide">
     <div class="logo">
         {~ if(!empty(@cfg.logo)): ~}
-        <img src="{{@BASE}}/img/logo.png" />
+        <img src="/img/logo.png" />
         {~ endif ~}
         <input type="hidden" name="MAX_FILE_SIZE" value="2097152" />
         <label for="upload-logo">{{@L.basic.logoupload}}</label><input type="file" name="upload-logo" value="" accept="image/*" id="upload-logo">

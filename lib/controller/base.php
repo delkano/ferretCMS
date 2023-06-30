@@ -5,7 +5,7 @@ class Base {
     public function install($f3) {
         echo "<h3>Creando bases de datos...</h3>";
 
-        $models = array('User', 'Page', 'Config', 'Menu');
+        $models = array('User', 'Page', 'Config', 'Menu', 'Plugin');
         foreach($models as $model) {
             $class = "\Model\\$model";
             if( $class::setup() )
@@ -22,8 +22,8 @@ class Base {
         $f3->set("SESSION.INSTALLING", true);
         $f3->set("ADMIN", false);
 
-        $f3->route('POST @user_create: /es/postinstall', '\Controller\Base->post_install');
-        echo \Template::instance()->render($f3->theme.'/templates/userEdit.html');
+        $f3->route('POST @user_create: /postinstall', '\Controller\Base->post_install');
+        echo \Template::instance()->render('config/templates/userEdit.html');
         exit;
     }
 

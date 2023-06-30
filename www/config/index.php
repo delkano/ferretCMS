@@ -1,10 +1,11 @@
 <?php 
 // composer autoloader for required packages and dependencies
-require_once('../../vendor/autoload.php');
+$loader = require_once('../../vendor/autoload.php');
 /** @var \Base $f3 */
 $f3 = \Base::instance();
 // F3 autoloader for application business code
 $f3->config('../../config.ini');
+$f3->autoloader = $loader;
 
 if(file_exists($f3->get("DB_NAME")))  {
     $f3->set('DB', new \DB\SQL('sqlite:'.$f3->get('DB_NAME')));
@@ -94,6 +95,9 @@ $f3->redirect('GET /config', '@config');
 
 $f3->route('GET @menu_list: /menus', '\Controller\Menu->getList');
 $f3->route('POST @menu_update: /menus', '\Controller\Menu->update');
+
+$f3->route('GET @plugin_list: /plugins', '\Controller\Plugin->getList');
+$f3->route('GET @plugin_toggle: /plugins/@path/toggle', '\Controller\Plugin->toggle');
 
 // - Page navigation and stuff
 $f3->route('GET @page_new: /page/new', '\Controller\Page->create');

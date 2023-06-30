@@ -1,4 +1,9 @@
 {
+    "autoload": {
+        "psr-4": {
+            "Plugin\\": "plugins/"
+        }
+    },
     "require": {
         "ikkez/f3-cortex": "1.*",
         "bcosca/fatfree": "^3.6",

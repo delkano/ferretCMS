@@ -7,4 +7,5 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'ScssPhp\\ScssPhp\\' => array($vendorDir . '/scssphp/scssphp/src'),
+    'Plugin\\' => array($baseDir . '/plugins'),
 );
