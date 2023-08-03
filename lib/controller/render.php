@@ -25,7 +25,7 @@ class Render {
         foreach($pages as $page)
             $this->create($page);
 
-        $css = ['main.scss'];
+        $css = ['main.scss', 'dark.scss'];
         $js = ['plugin.js', 'main.js'];
         foreach($css as $file) $this->createAsset('css', $file);
         foreach($js as $file) $this->createAsset('js', $file);

@@ -12,7 +12,7 @@
     <input type="text" name="title" value="{{@page.title}}" id="title">
     
     <textarea class="beautiful" name="content" rows="8" cols="40">{{@page.content}}</textarea>
-    <input type="text" name="categories" value="{{empty(@page.categories)?'':implode(@page.categories, ',')}}" id="categories">
+    <input type="text" name="categories" value="{{empty(@page.categories)?'':implode(',', @page.categories)}}" id="categories">
 
     <button type="submit">{{@L.basic.save}}</button>
 </form>
