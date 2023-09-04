@@ -4,50 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d94405b9ea5f649c28154ed1cf0baa28",
+    "content-hash": "6e8ec086e3f61e90c6a2e92e61582fde",
     "packages": [
         {
-            "name": "bcosca/fatfree",
-            "version": "3.8.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/bcosca/fatfree.git",
-                "reference": "3f7741b671accd3aa6d38461203ae5c07e39d58d"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/bcosca/fatfree/zipball/3f7741b671accd3aa6d38461203ae5c07e39d58d",
-                "reference": "3f7741b671accd3aa6d38461203ae5c07e39d58d",
-                "shasum": ""
-            },
-            "require": {
-                "bcosca/fatfree-core": "^3.8"
-            },
-            "type": "project",
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "GPL-3.0"
-            ],
-            "description": "A powerful yet easy-to-use PHP micro-framework designed to help you build dynamic and robust Web applications - fast!",
-            "homepage": "http://fatfreeframework.com/",
-            "support": {
-                "issues": "https://github.com/bcosca/fatfree/issues",
-                "source": "https://github.com/bcosca/fatfree/tree/3.8.1"
-            },
-            "time": "2022-11-04T23:22:40+00:00"
-        },
-        {
             "name": "bcosca/fatfree-core",
-            "version": "3.8.1",
+            "version": "3.8.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/f3-factory/fatfree-core.git",
-                "reference": "f6ea45472f55a1ecabd4ced74cb56f0efd6af34e"
+                "reference": "774692ce7698904d3cb35bbd4f79376bb17eeddc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/f3-factory/fatfree-core/zipball/f6ea45472f55a1ecabd4ced74cb56f0efd6af34e",
-                "reference": "f6ea45472f55a1ecabd4ced74cb56f0efd6af34e",
+                "url": "https://api.github.com/repos/f3-factory/fatfree-core/zipball/774692ce7698904d3cb35bbd4f79376bb17eeddc",
+                "reference": "774692ce7698904d3cb35bbd4f79376bb17eeddc",
                 "shasum": ""
             },
             "require": {
@@ -67,9 +37,9 @@
             "homepage": "http://fatfreeframework.com/",
             "support": {
                 "issues": "https://github.com/f3-factory/fatfree-core/issues",
-                "source": "https://github.com/f3-factory/fatfree-core/tree/3.8.1"
+                "source": "https://github.com/f3-factory/fatfree-core/tree/3.8.2"
             },
-            "time": "2022-11-04T23:15:19+00:00"
+            "time": "2023-07-23T22:11:30+00:00"
         },
         {
             "name": "ikkez/f3-cortex",
@@ -273,47 +243,6 @@
                 "source": "https://github.com/xfra35/f3-access/tree/v1.2.2"
             },
             "time": "2021-04-29T16:52:25+00:00"
-        },
-        {
-            "name": "xfra35/f3-multilang",
-            "version": "v1.3.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/xfra35/f3-multilang.git",
-                "reference": "63464a32fccd578503270829c6d19bb030d2b34a"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/xfra35/f3-multilang/zipball/63464a32fccd578503270829c6d19bb030d2b34a",
-                "reference": "63464a32fccd578503270829c6d19bb030d2b34a",
-                "shasum": ""
-            },
-            "require": {
-                "bcosca/fatfree-core": "3.*"
-            },
-            "type": "library",
-            "autoload": {
-                "classmap": [
-                    "lib/"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "GPL-3.0"
-            ],
-            "description": "Route localization plugin for the PHP Fat-Free Framework",
-            "homepage": "https://github.com/xfra35/f3-multilang",
-            "keywords": [
-                "F3",
-                "fatfree",
-                "localization",
-                "multilingual"
-            ],
-            "support": {
-                "issues": "https://github.com/xfra35/f3-multilang/issues",
-                "source": "https://github.com/xfra35/f3-multilang/tree/master"
-            },
-            "time": "2019-11-06T13:46:51+00:00"
         }
     ],
     "packages-dev": [],

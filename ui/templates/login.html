@@ -1,0 +1,11 @@
+<form action="{{@BASE}}{{'login_check' | alias}}" method="POST" id="login">
+    <p>
+        <label for="username">{{@L.login.username}}</label><input type="text" name="username" value="" id="username">
+    </p>
+    <p>
+        <label for="password">{{@L.login.password}}</label><input type="password" name="password" value="" id="password">
+    </p>
+    <p>
+        <button type="submit">{{@L.login.login}}</button>
+    </p>
+</form>

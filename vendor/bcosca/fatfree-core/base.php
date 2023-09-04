@@ -2,7 +2,7 @@
 
 /*
 
-	Copyright (c) 2009-2019 F3::Factory/Bong Cosca, All rights reserved.
+	Copyright (c) 2009-2023 F3::Factory/Bong Cosca, All rights reserved.
 
 	This file is part of the Fat-Free Framework (http://fatfreeframework.com).
 
@@ -45,7 +45,7 @@ final class Base extends Prefab implements ArrayAccess {
 	//@{ Framework details
 	const
 		PACKAGE='Fat-Free Framework',
-		VERSION='3.8.1-Release';
+		VERSION='3.8.2-Release';
 	//@}
 
 	//@{ HTTP status codes (RFC 2616)
@@ -915,7 +915,7 @@ final class Base extends Prefab implements ArrayAccess {
 		return $this->recursive($arg,
 			function($val) use($tags) {
 				if ($tags!='*')
-					$val=trim(strip_tags($val,
+					$val=trim(strip_tags($val??'',
 						'<'.implode('><',$this->split($tags)).'>'));
 				return trim(preg_replace(
 					'/[\x00-\x08\x0B\x0C\x0E-\x1F]/','',$val));
@@ -1063,11 +1063,13 @@ final class Base extends Prefab implements ArrayAccess {
 							if ($php81) {
 								$lang = $this->split($this->LANGUAGE);
 								// requires intl extension
-								$formatter = new IntlDateFormatter($lang[0],
-									(empty($mod) || $mod=='short')
-										? IntlDateFormatter::SHORT :
-										($mod=='full' ? IntlDateFormatter::LONG : IntlDateFormatter::MEDIUM),
-									IntlDateFormatter::NONE);
+								$dateType=(empty($mod) || $mod=='short') ? IntlDateFormatter::SHORT :
+									($mod=='full' ? IntlDateFormatter::FULL : IntlDateFormatter::LONG);
+								$pattern = $dateType === IntlDateFormatter::SHORT
+									? (($ptn=IntlDatePatternGenerator::create($lang[0]))
+										? $ptn->getBestPattern('yyyyMMdd') : null) : null;
+								$formatter = new IntlDateFormatter($lang[0],$dateType,
+									IntlDateFormatter::NONE, null,null, $pattern);
 								return $formatter->format($args[$pos]);
 							} else {
 								if (empty($mod) || $mod=='short')
@@ -3111,6 +3113,7 @@ class Preview extends View {
 	*	@param $escape bool
 	**/
 	function resolve($node,array $hive=NULL,$ttl=0,$persist=FALSE,$escape=NULL) {
+		$hash=null;
 		$fw=$this->fw;
 		$cache=Cache::instance();
 		if ($escape!==NULL) {

@@ -1,0 +1,6 @@
+<nav id="sidebar">
+    {{'Config Menu' | menu}}
+</nav>
+<div id="main-config">
+    <include if="{{isset(@site.subtemplate)}}" href="{{'templates/'.@site.subtemplate.'.html'}}"/>
+</div>

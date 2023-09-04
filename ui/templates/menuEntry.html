@@ -1,0 +1,20 @@
+<ul>
+    {~ foreach(@menus as @menu): ~}
+    <li>
+        <input type="hidden" name="menu[{{@menu.id}}][id]" value="{{@menu.id}}" class="id">
+        <input type="hidden" name="menu[{{@menu.id}}][parent]" value="{{!empty(@menu.parent)?@menu.parent.id:''}}">
+        <input type="text" name="menu[{{@menu.id}}][name]" value="{{@menu.name}}">
+        <input type="text" name="menu[{{@menu.id}}][url]" value="{{@menu.url}}">
+        <select name="menu[{{@menu.id}}][page]">
+            <option value=''> --- </option>
+            {~ foreach(@pages as @page): ~}
+            <option value='{{@page.id}}' {~ if(isset(@menu.page) && @page.id === @menu.page.id): ~}selected{~endif~}>{{@page.title}}</option>
+            {~ endforeach ~}
+        </select>
+        <button type="button" class="add-menu">+</button>
+        <button type="button" class="delete-menu">-</button> 
+
+        <include if="{{@menu.children}}" with="menus=@menu.children" href="{{'templates/menuEntry.html'}}" />
+    </li>
+    {~ endforeach ~}
+</ul>

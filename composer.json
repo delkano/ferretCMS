@@ -1,14 +1,22 @@
 {
+    "name": "delkano/ferretcms2",
+    "description": "A web-based static microCMS",
+    "type": "project",
+    "require": {
+        "ikkez/f3-cortex": "^1.7",
+        "xfra35/f3-access": "^1.2",
+        "scssphp/scssphp": "^1.11"
+    },
+    "license": "Affero GPL3",
     "autoload": {
         "psr-4": {
             "Plugin\\": "plugins/"
         }
     },
-    "require": {
-        "ikkez/f3-cortex": "1.*",
-        "bcosca/fatfree": "^3.6",
-        "xfra35/f3-access": "^1.0",
-        "xfra35/f3-multilang": "^1.1",
-        "scssphp/scssphp": "^1.11"
-    }
+    "authors": [
+        {
+            "name": "Diego Cano",
+            "email": "dcano@blepstudio.es"
+        }
+    ]
 }

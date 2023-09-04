@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit9bcdd9bc4571cb7d00f82f8b178ea5a2
+class ComposerStaticInit39904a5a908dfc948e31f9121c15cde2
 {
     public static $prefixLengthsPsr4 = array (
         'S' => 
@@ -65,7 +65,6 @@ class ComposerStaticInit9bcdd9bc4571cb7d00f82f8b178ea5a2
         'Magic' => __DIR__ . '/..' . '/bcosca/fatfree-core/magic.php',
         'Markdown' => __DIR__ . '/..' . '/bcosca/fatfree-core/markdown.php',
         'Matrix' => __DIR__ . '/..' . '/bcosca/fatfree-core/matrix.php',
-        'Multilang' => __DIR__ . '/..' . '/xfra35/f3-multilang/lib/multilang.php',
         'Prefab' => __DIR__ . '/..' . '/bcosca/fatfree-core/base.php',
         'Preview' => __DIR__ . '/..' . '/bcosca/fatfree-core/base.php',
         'Registry' => __DIR__ . '/..' . '/bcosca/fatfree-core/base.php',
@@ -87,9 +86,9 @@ class ComposerStaticInit9bcdd9bc4571cb7d00f82f8b178ea5a2
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit9bcdd9bc4571cb7d00f82f8b178ea5a2::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit9bcdd9bc4571cb7d00f82f8b178ea5a2::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit9bcdd9bc4571cb7d00f82f8b178ea5a2::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit39904a5a908dfc948e31f9121c15cde2::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit39904a5a908dfc948e31f9121c15cde2::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit39904a5a908dfc948e31f9121c15cde2::$classMap;
 
         }, null, ClassLoader::class);
     }
