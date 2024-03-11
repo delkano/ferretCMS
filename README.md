@@ -1,0 +1,1 @@
+THIS REPOSITORY IS DEAD. YOU CAN FOLLOW THE STATE OF THE PROJECT AT https://codeberg.org/delkano/ferretCMS
